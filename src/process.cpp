@@ -44,6 +44,31 @@ int pid() {
 #endif
 }
 
+std::string platform() {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+  return "win32";
+#elif defined(__APPLE__) && (defined(__GNUC__) || defined(__xlC__) || defined(__xlc__))
+  #include <TargetConditionals.h>
+  #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
+    return "darwin";
+    // #define I_OS_DARWIN
+    // #ifdef __LP64__
+    //   #define I_OS_DARWIN64
+    // #else
+    //   #define I_OS_DARWIN32
+    // #endif
+  #else
+    return "unknown";
+  #endif
+#elif defined(__ANDROID__) || defined(ANDROID)
+  return "android";
+#elif defined(__linux__) || defined(__linux)
+  return "linux";
+#else
+  return "unknown";
+#endif
+}
+
 } // process
 
 } // toyo

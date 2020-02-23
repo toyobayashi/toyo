@@ -35,6 +35,7 @@ target_include_directories(toyo
 add_executable(toyotest
   "test/main.cpp"
   "test/mocha.c"
+  "test/oid.c"
 )
 
 target_link_libraries(toyotest toyo)

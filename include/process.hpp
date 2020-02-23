@@ -9,6 +9,7 @@ namespace process {
 
 std::string cwd();
 int pid();
+std::string platform();
 
 } // process
 

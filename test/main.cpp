@@ -1,8 +1,10 @@
 #include <iostream>
+#include <cstring>
 #include "charset.hpp"
 #include "process.hpp"
 #include "path.hpp"
 #include "fs.hpp"
+#include "oid.hpp"
 
 #include "mocha.h"
 
@@ -132,7 +134,7 @@ static int test_class() {
 }
 
 static int test_readdir() {
-  auto ls = toyo::fs::readdir(path::__dirname());
+  auto ls = toyo::fs::readdir(path::__dirname() + "/any/..");
   expect(ls.size() > 0)
   std::cout << "[";
   for (int i = 0; i < ls.size(); i++) {
@@ -172,6 +174,84 @@ static int test_exists() {
   return 0;
 }
 
+static int test_stat() {
+  try {
+    fs::stats stat = fs::stat("noexists");
+    return -1;
+  } catch (const std::exception& e) {
+    std::string message = e.what();
+    expect(message.find("No such file or directory") != std::string::npos)
+    std::cout << message << std::endl;
+  }
+
+  try {
+    fs::stats stat = fs::stat(path::__dirname());
+    expect(stat.is_directory())
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+  }
+
+  try {
+    fs::stats stat = fs::stat(path::__filename());
+    expect(stat.is_file());
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+  }
+
+  return 0;
+}
+
+static int test_mkdirs() {
+  std::string mkdir0 = path::__dirname();
+  try {
+    fs::mkdirs(mkdir0);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+    return -1;
+  }
+
+  std::string mkdir1 = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
+  try {
+    fs::mkdirs(mkdir1);
+    expect(fs::exists(mkdir1));
+    fs::remove(mkdir1);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+    return -1;
+  }
+
+  std::string root = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
+  std::string mkdir2 = path::join(root, "subdir/a/b/c");
+  try {
+    fs::mkdirs(mkdir2);
+    expect(fs::exists(mkdir2));
+    fs::remove(root);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+    return -1;
+  }
+
+  std::string mkdir3 = path::__filename();
+  try {
+    fs::mkdirs(mkdir3);
+    return -1;
+  } catch (const std::exception& e) {
+    std::string msg = e.what();
+    expect(msg.find(strerror(EEXIST)) != std::string::npos)
+  }
+
+  std::string mkdir4 = path::join(path::__filename(), "fail");
+  try {
+    fs::mkdirs(mkdir4);
+    return -1;
+  } catch (const std::exception& e) {
+    std::string msg = e.what();
+    expect(msg.find(strerror(ENOENT)) != std::string::npos)
+  }
+
+  return 0;
+}
+
 int main() {
   int code = 0;
   int fail = 0;
@@ -194,7 +274,9 @@ int main() {
 
   code = describe("fs",
     test_exists,
-    test_readdir);
+    test_readdir,
+    test_stat,
+    test_mkdirs);
 
   if (code != 0) {
     fail++;
