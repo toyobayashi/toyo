@@ -124,7 +124,7 @@ static int test_class() {
 
   path::path obj5 = toyo::process::cwd();
 
-  obj5 += std::string("123");
+  obj5 += "123";
 
   expect(obj5.format() == path::join(process::cwd(), "123"))
 

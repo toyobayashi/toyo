@@ -16,15 +16,16 @@ private:
   std::string ext_;
 
   std::string _format(const std::string& sep) const;
+
+  path(const std::string&, bool);
 public:
   static path parse_win32(const std::string&);
   static path parse_posix(const std::string&);
   static path parse(const std::string&);
 
-  ~path();
   path();
   path(const std::string&);
-  path(const path&);
+  path(const char*);
 
   std::string dir() const;
   std::string root() const;
@@ -38,14 +39,9 @@ public:
   path& name(const std::string&);
   path& ext(const std::string&);
 
-  path& operator=(const path& other);
-  path& operator=(const std::string& other);
   path operator+(const path& p) const;
-  path operator+(const std::string& p) const;
   path& operator+=(const path& p);
-  path& operator+=(const std::string& p);
   bool operator==(const path& other);
-  bool operator==(const std::string& other);
   std::string format_win32() const;
   std::string format_posix() const;
   std::string format() const;
