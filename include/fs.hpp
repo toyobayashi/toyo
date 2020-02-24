@@ -96,7 +96,7 @@ public:
   dir(const std::string& p);
   ~dir();
   void close();
-
+  std::string path() const;
   fs::dirent read();
 };
 #else
@@ -134,7 +134,7 @@ public:
   dir(const std::string& p);
   ~dir();
   void close();
-
+  std::string path() const;
   fs::dirent read() const;
 };
 #endif

@@ -179,6 +179,9 @@ dir::~dir() {
     dir_ = -1;
   }
 }
+
+std::string dir::path() const { return path_; }
+
 void dir::close() {
   if (first_data_) {
     delete first_data_;
@@ -288,6 +291,9 @@ dir::~dir() {
     dir_ = nullptr;
   }
 }
+
+std::string dir::path() const { return path_; }
+
 void dir::close() {
   if (dir_) {
     if (0 != closedir(dir_)) {
