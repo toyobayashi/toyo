@@ -8,8 +8,10 @@
 
 #endif
 
+#include <utility>
 #include <stdexcept>
 #include <cerrno>
+#include <cstring>
 
 #include "fs.hpp"
 #include "path.hpp"
@@ -64,22 +66,15 @@ dirent::~dirent() {
 dirent::dirent(struct _wfinddata_t* d): dirent() {
   if (d) {
     dirent_ = new struct _wfinddata_t;
-    dirent_->attrib = d->attrib;
-    dirent_->time_access = d->time_access;
-    dirent_->time_create = d->time_create;
-    dirent_->time_write = d->time_write;
-    dirent_->size = d->size;
-    wcscpy(dirent_->name, d->name);
+    memcpy(dirent_, d, sizeof(struct _wfinddata_t));
   }
 }
 
 dirent::dirent(const dirent& d): dirent(d.dirent_) {}
 
-dirent::dirent(dirent&& d): dirent(d) {
-  if (d.dirent_) {
-    delete d.dirent_;
-    d.dirent_ = nullptr;
-  }
+dirent::dirent(dirent&& d) {
+  dirent_ = d.dirent_;
+  d.dirent_ = nullptr;
 }
 
 bool dirent::is_empty() const { return dirent_ == nullptr; }
@@ -135,12 +130,7 @@ dirent& dirent::operator=(const dirent& d) {
     if (!dirent_) {
       dirent_ = new struct _wfinddata_t;
     }
-    dirent_->attrib = d.dirent_->attrib;
-    dirent_->time_access = d.dirent_->time_access;
-    dirent_->time_create = d.dirent_->time_create;
-    dirent_->time_write = d.dirent_->time_write;
-    dirent_->size = d.dirent_->size;
-    wcscpy(dirent_->name, d.dirent_->name);
+    memcpy(dirent_, d.dirent_, sizeof(struct _wfinddata_t));
   } else {
     if (dirent_) {
       delete dirent_;
@@ -151,11 +141,62 @@ dirent& dirent::operator=(const dirent& d) {
 }
 
 dirent& dirent::operator=(dirent&& d) {
-  this->operator=(d);
-  if (d.dirent_) {
-    delete d.dirent_;
-    d.dirent_ = nullptr;
+  if (dirent_) {
+    delete dirent_;
+    dirent_ = nullptr;
   }
+  dirent_ = d.dirent_;
+  d.dirent_ = nullptr;
+  return *this;
+}
+
+dir::dir(const dir& d) {
+  dir_ = d.dir_;
+  path_ = d.path_;
+  if (d.first_data_) {
+    first_data_ = new struct _wfinddata_t;
+    memcpy(first_data_, d.first_data_, sizeof(struct _wfinddata_t));
+  } else {
+    first_data_ = nullptr;
+  }
+}
+
+dir::dir(dir&& d) {
+  dir_ = std::exchange(d.dir_, -1);
+  path_ = std::move(d.path_);
+  first_data_ = d.first_data_;
+  d.first_data_ = nullptr;
+}
+
+dir& dir::operator=(const dir& d) {
+  if (&d == this) return *this;
+  dir_ = d.dir_;
+  path_ = d.path_;
+
+  if (first_data_) {
+    delete first_data_;
+    first_data_ = nullptr;
+  }
+
+  if (d.first_data_) {
+    first_data_ = new struct _wfinddata_t;
+    memcpy(first_data_, d.first_data_, sizeof(struct _wfinddata_t));
+  } else {
+    first_data_ = nullptr;
+  }
+
+  return *this;
+}
+
+dir& dir::operator=(dir&& d) {
+  dir_ = std::exchange(d.dir_, -1);
+  path_ = std::move(d.path_);
+  if (first_data_) {
+    delete first_data_;
+    first_data_ = nullptr;
+  }
+  first_data_ = d.first_data_;
+  d.first_data_ = nullptr;
   return *this;
 }
 

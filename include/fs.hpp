@@ -93,11 +93,16 @@ private:
   std::string path_;
   struct _wfinddata_t* first_data_;
 public:
+  dir(const dir&);
+  dir(dir&&);
   dir(const std::string& p);
   ~dir();
   void close();
   std::string path() const;
   fs::dirent read();
+
+  dir& operator=(const dir& d);
+  dir& operator=(dir&& d);
 };
 #else
 class dirent;
