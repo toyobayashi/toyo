@@ -185,15 +185,52 @@ static int test_stat() {
   }
 
   try {
+    fs::stats stat = fs::lstat("noexists");
+    return -1;
+  } catch (const std::exception& e) {
+    std::string message = e.what();
+    expect(message.find("No such file or directory") != std::string::npos)
+    std::cout << message << std::endl;
+  }
+
+  try {
     fs::stats stat = fs::stat(path::__dirname());
+    fs::stats stat2 = fs::lstat(path::__dirname());
     expect(stat.is_directory())
+    expect(stat2.is_directory())
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl;
   }
 
   try {
     fs::stats stat = fs::stat(path::__filename());
+    fs::stats stat2 = fs::lstat(path::__filename());
     expect(stat.is_file());
+    expect(stat2.is_file());
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+  }
+
+  try {
+    fs::symlink(path::__filename(), "slk");
+    expect(fs::exists("slk"))
+    fs::stats stat = fs::stat("slk");
+    fs::stats stat2 = fs::lstat("slk");
+    std::cout << stat.size << std::endl;
+    std::cout << stat.is_symbolic_link() << std::endl;
+    std::cout << stat2.size << std::endl;
+    std::cout << stat2.is_symbolic_link() << std::endl;
+    fs::remove("slk");
+    expect(!fs::exists("slk"))
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+  }
+
+  try {
+    fs::symlink("notexists", "slk2");
+    expect(fs::exists("slk2"))
+    fs::remove("slk2");
+    expect(!fs::exists("slk2"))
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl;
   }
