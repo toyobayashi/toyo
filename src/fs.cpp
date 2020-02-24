@@ -21,21 +21,6 @@
 namespace toyo {
 namespace fs {
 
-// #ifdef _WIN32
-// static void win32_throw_stat_error(const std::string& p, const std::string& fn) {
-//   LPVOID buf;
-//   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR) &buf, 0, NULL)) {
-//     std::wstring msg = (wchar_t*)buf;
-//     LocalFree(buf);
-//     size_t pos = msg.find_last_of(L"\r\n");
-//     msg = msg.substr(0, pos - 1);
-//     throw std::runtime_error(toyo::charset::w2a(msg) + fn + " \"" + p + "\"");
-//   } else {
-//     throw std::runtime_error(fn + " \"" + p + "\"");
-//   }
-// }
-// #endif
-
 // static bool is_symlink(const std::string& p) noexcept {
 //   std::string path = path::normalize(p);
 // #ifdef _WIN32
@@ -671,17 +656,14 @@ void symlink(const std::string& o, const std::string& n) {
 }
 
 #ifdef _WIN32
-static void win32_throw_symlink_error(const std::string& o, const std::string& n) {
-  LPVOID buf;
-  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR) &buf, 0, NULL)) {
-    std::wstring msg = (wchar_t*)buf;
-    LocalFree(buf);
-    size_t pos = msg.find_last_of(L"\r\n");
-    msg = msg.substr(0, pos - 1);
-    throw std::runtime_error(toyo::charset::w2a(msg) + "symlink \"" + o + "\" -> \"" + n + "\"");
-  } else {
-    throw std::runtime_error("symlink \"" + o + "\" -> \"" + n + "\"");
-  }
+static std::string get_last_error_message() {
+  int size = 0;
+  get_last_error(nullptr, &size);
+  char* buf = new char[size];
+  get_last_error(buf, &size);
+  std::string res(buf);
+  delete buf;
+  return res;
 }
 #endif
 
@@ -691,18 +673,18 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
 #ifdef _WIN32
   if (type == symlink_type_directory) {
     if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), SYMBOLIC_LINK_FLAG_DIRECTORY)) {
-      win32_throw_symlink_error(o, n);
+      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
     }
   } else if (type == symlink_type_file) {
     if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), 0x0)) {
-      win32_throw_symlink_error(o, n);
+      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
     }
   } else if (type == symlink_type_junction) {
     oldpath = path::resolve(oldpath);
     try {
       fs::symlink(oldpath, n);
     } catch (const std::exception&) {
-      win32_throw_symlink_error(oldpath, n);
+      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
     }
   } else {
     throw std:: runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");

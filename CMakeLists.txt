@@ -9,6 +9,7 @@ set(SOURCE_FILES
   "src/string.cpp"
   "src/fs.cpp"
   "src/cerror.cpp"
+  "src/win.cpp"
 )
 
 add_library(toyo STATIC

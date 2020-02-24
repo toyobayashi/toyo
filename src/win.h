@@ -8,4 +8,6 @@
 #include <Windows.h>
 #endif
 
+int get_last_error(char* message, int* size);
+
 #endif
