@@ -510,15 +510,18 @@ std::vector<std::string> readdir(const std::string& p) {
   return res;
 }
 
-bool exists(const std::string& p) {
+bool access(const std::string& p, int mode) {
   std::string npath = path::normalize(p);
-  bool baccess = false;
 #ifdef _WIN32
   std::wstring path = toyo::charset::a2w(npath);
-  baccess = (_waccess(path.c_str(), 00) == 0);
+  return (_waccess(path.c_str(), mode) == 0);
 #else
-  baccess = (access(npath.c_str(), F_OK) == 0);
+  return (::access(npath.c_str(), mode) == 0);
 #endif
+}
+
+bool exists(const std::string& p) {
+  bool baccess = fs::access(p, f_ok);
   if (baccess) {
     return true;
   }
