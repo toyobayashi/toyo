@@ -5,7 +5,7 @@
 #include <io.h>
 #include <wchar.h>
 #else
-#include <dirent.h>
+
 #endif
 
 #include <stdexcept>
@@ -52,6 +52,261 @@ namespace fs {
 //   return S_ISLNK(info.st_mode);
 // #endif
 // }
+
+#ifdef _WIN32
+dirent::dirent(): dirent_(nullptr) {}
+dirent::~dirent() {
+  if (dirent_) {
+    delete dirent_;
+    dirent_ = nullptr;
+  }
+}
+dirent::dirent(struct _wfinddata_t* d): dirent() {
+  if (d) {
+    dirent_ = new struct _wfinddata_t;
+    dirent_->attrib = d->attrib;
+    dirent_->time_access = d->time_access;
+    dirent_->time_create = d->time_create;
+    dirent_->time_write = d->time_write;
+    dirent_->size = d->size;
+    wcscpy(dirent_->name, d->name);
+  }
+}
+
+dirent::dirent(const dirent& d): dirent(d.dirent_) {}
+
+dirent::dirent(dirent&& d): dirent(d) {
+  if (d.dirent_) {
+    delete d.dirent_;
+    d.dirent_ = nullptr;
+  }
+}
+
+bool dirent::is_empty() const { return dirent_ == nullptr; }
+
+const struct _wfinddata_t* dirent::data() { return dirent_; }
+
+std::string dirent::name() const {
+  if (dirent_) {
+    return toyo::charset::w2a(dirent_->name);
+  } else {
+    return "";
+  }
+}
+
+bool dirent::is_file() const {
+  if (dirent_) {
+    return ((dirent_->attrib & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY) && ((dirent_->attrib & FILE_ATTRIBUTE_REPARSE_POINT) != FILE_ATTRIBUTE_REPARSE_POINT);
+  } else {
+    return false;
+  }
+}
+bool dirent::is_directory() const {
+  if (dirent_) {
+    return ((dirent_->attrib & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+  } else {
+    return false;
+  }
+}
+bool dirent::is_fifo() const {
+  return false;
+}
+bool dirent::is_character_device() const {
+  return false;
+}
+bool dirent::is_symbolic_link() const {
+  if (dirent_) {
+    return ((dirent_->attrib & FILE_ATTRIBUTE_REPARSE_POINT) == FILE_ATTRIBUTE_REPARSE_POINT);
+  } else {
+    return false;
+  }
+}
+bool dirent::is_block_device() const {
+  return false;
+}
+bool dirent::is_socket() const {
+  return false;
+}
+
+dirent& dirent::operator=(const dirent& d) {
+  if (&d == this) return *this;
+
+  if (d.dirent_) {
+    if (!dirent_) {
+      dirent_ = new struct _wfinddata_t;
+    }
+    dirent_->attrib = d.dirent_->attrib;
+    dirent_->time_access = d.dirent_->time_access;
+    dirent_->time_create = d.dirent_->time_create;
+    dirent_->time_write = d.dirent_->time_write;
+    dirent_->size = d.dirent_->size;
+    wcscpy(dirent_->name, d.dirent_->name);
+  } else {
+    if (dirent_) {
+      delete dirent_;
+      dirent_ = nullptr;
+    }
+  }
+  return *this;
+}
+
+dirent& dirent::operator=(dirent&& d) {
+  this->operator=(d);
+  if (d.dirent_) {
+    delete d.dirent_;
+    d.dirent_ = nullptr;
+  }
+  return *this;
+}
+
+dir::dir(const std::string& p): dir_(-1), path_(p), first_data_(nullptr) {
+  std::string path = toyo::path::normalize(p);
+  std::wstring wpath = toyo::charset::a2w(path);
+  first_data_ = new struct _wfinddata_t;
+  dir_ = _wfindfirst(toyo::charset::a2w(path::win32::join(path, "*")).c_str(), first_data_);
+  if (dir_ == -1) {
+    delete first_data_;
+    throw cerror(errno, std::string("opendir \"") + p + "\"");
+  }
+}
+dir::~dir() {
+  if (first_data_) {
+    delete first_data_;
+    first_data_ = nullptr;
+  }
+  if (dir_ != -1) {
+    _findclose(dir_);
+    dir_ = -1;
+  }
+}
+void dir::close() {
+  if (first_data_) {
+    delete first_data_;
+    first_data_ = nullptr;
+  }
+  if (dir_ != -1) {
+    if (0 != _findclose(dir_)) {
+      throw cerror(errno, std::string("closedir \"") + path_ + "\""); 
+    };
+    dir_ = -1;
+  }
+}
+
+fs::dirent dir::read() {
+  if (first_data_) {
+    fs::dirent tmp(first_data_);
+    delete first_data_;
+    first_data_ = nullptr;
+    return tmp;
+  }
+  struct _wfinddata_t* file = new struct _wfinddata_t;
+  int ret = _wfindnext(dir_, file);
+  if (ret == 0) {
+    fs::dirent tmp(file);
+    delete file;
+    return tmp;
+  } else {
+    delete file;
+    return nullptr;
+  }
+}
+#else
+dirent::dirent(): dirent_(nullptr) {}
+dirent::dirent(struct ::dirent* d): dirent_(d) {}
+
+bool dirent::is_empty() const { return dirent_ == nullptr; }
+
+const struct ::dirent* dirent::data() { return dirent_; }
+
+std::string dirent::name() const {
+  if (dirent_) {
+    return dirent_->d_name;
+  } else {
+    return "";
+  }
+}
+
+bool dirent::is_file() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_REG;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_directory() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_DIR;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_fifo() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_FIFO;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_character_device() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_FIFO;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_symbolic_link() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_LNK;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_block_device() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_BLK;
+  } else {
+    return false;
+  }
+}
+bool dirent::is_socket() const {
+  if (dirent_) {
+    return dirent_->d_type == DT_SOCK;
+  } else {
+    return false;
+  }
+}
+
+dir::dir(const std::string& p): dir_(nullptr), path_(p) {
+  std::string path = toyo::path::normalize(p);
+  if ((dir_ = ::opendir(path.c_str())) == nullptr) {
+    throw cerror(errno, std::string("opendir \"") + p + "\"");
+  }
+}
+dir::~dir() {
+  if (dir_) {
+    closedir(dir_);
+    dir_ = nullptr;
+  }
+}
+void dir::close() {
+  if (dir_) {
+    if (0 != closedir(dir_)) {
+      throw cerror(errno, std::string("closedir \"") + path_ + "\""); 
+    }
+    dir_ = nullptr;
+  }
+}
+
+fs::dirent dir::read() const {
+  struct ::dirent *direntp = ::readdir(dir_);
+  return direntp;
+}
+
+#endif
+
+fs::dir opendir(const std::string& p) {
+  return fs::dir(p);
+}
 
 stats::stats(const char* path, bool follow_link): stats(std::string(path), follow_link) {}
 
@@ -204,51 +459,23 @@ bool stats::is_socket() const {
 }
 
 std::vector<std::string> readdir(const std::string& p) {
-#ifdef _WIN32
-  struct _wfinddata_t file;
-  intptr_t hFile;
   std::string newPath = toyo::path::normalize(p);
+  fs::dir dir = fs::opendir(newPath);
 
-  hFile = _wfindfirst(toyo::charset::a2w(toyo::path::win32::join(newPath, "*.*")).c_str(), &file);
-  if (hFile == -1) {
-    throw cerror(errno, std::string("scandir \"") + p + "\"");
-  }
-
-  std::vector<std::string> res;
-  std::wstring item = file.name;
-
-  if (item != L"." && item != L"..") {
-    res.push_back(toyo::charset::w2a(item));
-  }
-
-  while (_wfindnext(hFile, &file) == 0) {
-    item = file.name;
-    if (item != L"." && item != L"..") {
-      res.push_back(toyo::charset::w2a(item));
-    }
-  }
-  _findclose(hFile);
-
-  return res;
-#else
-  std::string newPath = toyo::path::normalize(p);
-  DIR *dirp;
-  struct dirent *direntp;
-  int stats;
-  if ((dirp = opendir(newPath.c_str())) == nullptr) {
-    throw cerror(errno, std::string("scandir \"") + p + "\"");
-  }
   std::vector<std::string> res;
   std::string item;
-  while ((direntp = readdir(dirp)) != nullptr) {
-    item = direntp->d_name;
+
+  fs::dirent dirent;
+
+  while (!((dirent = dir.read()).is_empty())) {
+    item = dirent.name();
     if (item != "." && item != "..") {
       res.push_back(item);
     }
   }
-  closedir(dirp);
+
+  dir.close();
   return res;
-#endif
 }
 
 bool exists(const std::string& p) {
@@ -359,15 +586,6 @@ void remove(const std::string& p) {
   if (!fs::exists(p)) {
     return;
   }
-  // try {
-  //   fs::lstat(p);
-  // } catch (const cerror& e) {
-  //   if (e.code() == ENOENT) {
-  //     return;
-  //   } else {
-  //     throw e;
-  //   }
-  // }
 
   fs::stats stat = fs::lstat(p);
   if (stat.is_directory()) {

@@ -145,6 +145,19 @@ static int test_readdir() {
   }
   std::cout << "]" << std::endl;
 
+  fs::mkdirs("emptydir");
+  auto ls2 = toyo::fs::readdir("emptydir");
+  expect(ls2.size() == 0)
+  std::cout << "[";
+  for (int i = 0; i < ls2.size(); i++) {
+    std::cout << "\"" << ls2[i] << "\"";
+    if (i != ls2.size() - 1) {
+      std::cout << ", ";
+    }
+  }
+  std::cout << "]" << std::endl;
+  fs::remove("emptydir");
+
   try {
     auto ls2 = toyo::fs::readdir("notexists");
     return -1;

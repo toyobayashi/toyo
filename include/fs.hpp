@@ -12,6 +12,7 @@
 #ifdef _WIN32
 
 #else
+#include <dirent.h>
 #include <unistd.h>
 #endif
 
@@ -27,7 +28,6 @@ enum symlink_type {
 
 class stats {
 private:
-  // std::string path_;
   bool is_link_;
 public:
   stats(const std::string&, bool follow_link = false);
@@ -54,6 +54,92 @@ public:
   bool is_socket() const;
 };
 
+#ifdef _WIN32
+class dirent;
+class dir;
+
+class dirent {
+private:
+  struct _wfinddata_t* dirent_;
+
+public:
+  dirent();
+  ~dirent();
+  dirent(const dirent& d);
+  dirent(dirent&& d);
+  dirent(struct _wfinddata_t* d);
+
+  bool is_empty() const;
+
+  const struct _wfinddata_t* data();
+
+  std::string name() const;
+
+  dirent& operator=(const dirent& d);
+  dirent& operator=(dirent&& d);
+
+  bool is_file() const;
+  bool is_directory() const;
+  bool is_fifo() const;
+  bool is_character_device() const;
+  bool is_symbolic_link() const;
+  bool is_block_device() const;
+  bool is_socket() const;
+};
+
+class dir {
+private:
+  intptr_t dir_;
+  std::string path_;
+  struct _wfinddata_t* first_data_;
+public:
+  dir(const std::string& p);
+  ~dir();
+  void close();
+
+  fs::dirent read();
+};
+#else
+class dirent;
+class dir;
+
+class dirent {
+private:
+  struct ::dirent* dirent_;
+
+public:
+  dirent();
+  dirent(struct ::dirent* d);
+
+  bool is_empty() const;
+
+  const struct ::dirent* data();
+
+  std::string name() const;
+
+  bool is_file() const;
+  bool is_directory() const;
+  bool is_fifo() const;
+  bool is_character_device() const;
+  bool is_symbolic_link() const;
+  bool is_block_device() const;
+  bool is_socket() const;
+};
+
+class dir {
+private:
+  DIR* dir_;
+  std::string path_;
+public:
+  dir(const std::string& p);
+  ~dir();
+  void close();
+
+  fs::dirent read() const;
+};
+#endif
+
+fs::dir opendir(const std::string&);
 std::vector<std::string> readdir(const std::string&);
 bool exists(const std::string&);
 stats stat(const std::string&);
