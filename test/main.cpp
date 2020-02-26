@@ -306,6 +306,22 @@ static int test_mkdirs() {
   return 0;
 }
 
+static int test_copy() {
+  auto s = path::__filename();
+  auto d = path::basename(path::__filename());
+  fs::copy_file(s, d);
+  expect(fs::exists(d))
+  try {
+    fs::copy_file(s, d, true);
+    return -1;
+  } catch (const std::exception&) {
+    expect(fs::exists(d))
+    fs::remove(d);
+    expect(!fs::exists(d))
+  }
+  return 0;
+}
+
 int main() {
   int code = 0;
   int fail = 0;
@@ -330,7 +346,8 @@ int main() {
     test_exists,
     test_readdir,
     test_stat,
-    test_mkdirs);
+    test_mkdirs,
+    test_copy);
 
   if (code != 0) {
     fail++;

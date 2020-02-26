@@ -14,11 +14,15 @@
 #include <stdexcept>
 #include <cerrno>
 #include <cstring>
+#include <cstdio>
+#include <cstddef>
 
 #include "fs.hpp"
 #include "path.hpp"
 #include "charset.hpp"
 #include "cerror.hpp"
+
+#define TOYO_FS_BUFFER_SIZE 128 * 1024
 
 #ifdef _WIN32
 static int file_symlink_usermode_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
@@ -1248,7 +1252,7 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
     oldpath = path::resolve(oldpath);
     fs_create_junction(toyo::charset::a2w(oldpath).c_str(), toyo::charset::a2w(newpath).c_str());
   } else {
-    throw std:: runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");
+    throw std::runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");
   }
 #else
   int code = ::symlink(oldpath.c_str(), newpath.c_str());
@@ -1256,6 +1260,45 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
     throw cerror(errno, "symlink \"" + o + "\" -> \"" + n + "\"");
   }
 #endif
+}
+
+void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) {
+  std::string source = path::resolve(s);
+  std::string dest = path::resolve(d);
+
+  if (source == dest) {
+    return;
+  }
+
+#ifdef _WIN32
+  if (!CopyFileW(toyo::charset::a2w(source).c_str(), toyo::charset::a2w(dest).c_str(), fail_if_exists)) {
+    throw std::runtime_error(get_last_error_message() + " copy \"" + s + "\" -> \"" + d + "\"");
+  }
+#else
+
+  if (fail_if_exists && fs::exists(dest)) {
+    throw std::runtime_error("File exists. copy \"" + s + "\" -> \"" + d + "\"");
+  }
+
+  FILE* sf = ::fopen(source.c_str(), "rb+");
+  if (!sf) {
+    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+  }
+  FILE* df = ::fopen(dest.c_str(), "wb+");
+  if (!df) {
+    ::fclose(sf);
+    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+  }
+  unsigned char buf[TOYO_FS_BUFFER_SIZE];
+  size_t read;
+  while ((read = ::fread(buf, sizeof(unsigned char), TOYO_FS_BUFFER_SIZE, sf)) > 0) {
+    ::fwrite(buf, sizeof(unsigned char), read, df);
+    ::fflush(df);
+  }
+  ::fclose(sf);
+  ::fclose(df);
+#endif
+
 }
 
 }
