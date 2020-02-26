@@ -19,6 +19,7 @@ add_library(toyo STATIC
 # set_target_properties(acb PROPERTIES PREFIX "lib")
 
 if(WIN32 AND MSVC)
+  target_link_libraries(toyo ntdll)
   set_target_properties(toyo PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   target_compile_options(toyo PRIVATE /utf-8)
   target_compile_definitions(toyo PRIVATE

@@ -225,6 +225,10 @@ static int test_stat() {
   }
 
   try {
+    fs::symlink(path::__dirname(), "slk3", fs::symlink_type_junction);
+    expect(fs::exists("slk3"))
+    fs::remove("slk3");
+    expect(!fs::exists("slk3"))
     fs::symlink(path::__filename(), "slk");
     expect(fs::exists("slk"))
     fs::stats stat = fs::stat("slk");

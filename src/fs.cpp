@@ -1,6 +1,8 @@
 #include "win.h"
 
 #ifdef _WIN32
+#include <winioctl.h>
+#include <bcrypt.h>
 #include <direct.h>
 #include <io.h>
 #include <wchar.h>
@@ -18,27 +20,476 @@
 #include "charset.hpp"
 #include "cerror.hpp"
 
+#ifdef _WIN32
+static int file_symlink_usermode_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+
+static const WCHAR LONG_PATH_PREFIX[] = L"\\\\?\\";
+static const WCHAR LONG_PATH_PREFIX_LEN = 4;
+static const WCHAR JUNCTION_PREFIX[] = L"\\??\\";
+static const WCHAR JUNCTION_PREFIX_LEN = 4;
+
+#define IS_SLASH(c) ((c) == L'\\' || (c) == L'/')
+#define IS_LETTER(c) (((c) >= L'a' && (c) <= L'z') || \
+  ((c) >= L'A' && (c) <= L'Z'))
+
+#if defined(_MSC_VER) || defined(__MINGW64_VERSION_MAJOR)
+  typedef struct _REPARSE_DATA_BUFFER {
+    ULONG  ReparseTag;
+    USHORT ReparseDataLength;
+    USHORT Reserved;
+    union {
+      struct {
+        USHORT SubstituteNameOffset;
+        USHORT SubstituteNameLength;
+        USHORT PrintNameOffset;
+        USHORT PrintNameLength;
+        ULONG Flags;
+        WCHAR PathBuffer[1];
+      } SymbolicLinkReparseBuffer;
+      struct {
+        USHORT SubstituteNameOffset;
+        USHORT SubstituteNameLength;
+        USHORT PrintNameOffset;
+        USHORT PrintNameLength;
+        WCHAR PathBuffer[1];
+      } MountPointReparseBuffer;
+      struct {
+        UCHAR  DataBuffer[1];
+      } GenericReparseBuffer;
+    };
+  } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+#endif
+
+typedef struct _FILE_DISPOSITION_INFORMATION {
+  BOOLEAN DeleteFile;
+} FILE_DISPOSITION_INFORMATION, *PFILE_DISPOSITION_INFORMATION;
+
+typedef struct _IO_STATUS_BLOCK {
+  union {
+    NTSTATUS Status;
+    PVOID Pointer;
+  };
+  ULONG_PTR Information;
+} IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
+
+typedef struct _FILE_BASIC_INFORMATION {
+  LARGE_INTEGER CreationTime;
+  LARGE_INTEGER LastAccessTime;
+  LARGE_INTEGER LastWriteTime;
+  LARGE_INTEGER ChangeTime;
+  DWORD FileAttributes;
+} FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
+
+typedef enum _FILE_INFORMATION_CLASS {
+  FileDirectoryInformation = 1,
+  FileFullDirectoryInformation,
+  FileBothDirectoryInformation,
+  FileBasicInformation,
+  FileStandardInformation,
+  FileInternalInformation,
+  FileEaInformation,
+  FileAccessInformation,
+  FileNameInformation,
+  FileRenameInformation,
+  FileLinkInformation,
+  FileNamesInformation,
+  FileDispositionInformation,
+  FilePositionInformation,
+  FileFullEaInformation,
+  FileModeInformation,
+  FileAlignmentInformation,
+  FileAllInformation,
+  FileAllocationInformation,
+  FileEndOfFileInformation,
+  FileAlternateNameInformation,
+  FileStreamInformation,
+  FilePipeInformation,
+  FilePipeLocalInformation,
+  FilePipeRemoteInformation,
+  FileMailslotQueryInformation,
+  FileMailslotSetInformation,
+  FileCompressionInformation,
+  FileObjectIdInformation,
+  FileCompletionInformation,
+  FileMoveClusterInformation,
+  FileQuotaInformation,
+  FileReparsePointInformation,
+  FileNetworkOpenInformation,
+  FileAttributeTagInformation,
+  FileTrackingInformation,
+  FileIdBothDirectoryInformation,
+  FileIdFullDirectoryInformation,
+  FileValidDataLengthInformation,
+  FileShortNameInformation,
+  FileIoCompletionNotificationInformation,
+  FileIoStatusBlockRangeInformation,
+  FileIoPriorityHintInformation,
+  FileSfioReserveInformation,
+  FileSfioVolumeInformation,
+  FileHardLinkInformation,
+  FileProcessIdsUsingFileInformation,
+  FileNormalizedNameInformation,
+  FileNetworkPhysicalNameInformation,
+  FileIdGlobalTxDirectoryInformation,
+  FileIsRemoteDeviceInformation,
+  FileAttributeCacheInformation,
+  FileNumaNodeInformation,
+  FileStandardLinkInformation,
+  FileRemoteProtocolInformation,
+  FileMaximumInformation
+} FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
+
+extern "C"
+ULONG
+NTAPI
+RtlNtStatusToDosError(NTSTATUS Status);
+
+#ifndef NT_SUCCESS
+# define NT_SUCCESS(status) (((NTSTATUS) (status)) >= 0)
+#endif
+
+static std::string get_last_error_message() {
+  int size = 0;
+  get_last_error(nullptr, &size);
+  char* buf = new char[size];
+  get_last_error(buf, &size);
+  std::string res(buf);
+  delete buf;
+  return res;
+}
+
+extern "C"
+NTSYSAPI 
+NTSTATUS
+NTAPI
+NtSetInformationFile(
+  IN HANDLE               FileHandle,
+  OUT PIO_STATUS_BLOCK    IoStatusBlock,
+  IN PVOID                FileInformation,
+  IN ULONG                Length,
+  IN FILE_INFORMATION_CLASS FileInformationClass );
+
+#endif
+
+#ifdef _WIN32
+static int fs_wide_to_utf8(WCHAR* w_source_ptr,
+                           DWORD w_source_len,
+                           char** target_ptr,
+                           uint64_t* target_len_ptr) {
+  int r;
+  int target_len;
+  char* target;
+  target_len = WideCharToMultiByte(CP_UTF8,
+                                   0,
+                                   w_source_ptr,
+                                   w_source_len,
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   NULL);
+
+  if (target_len == 0) {
+    return -1;
+  }
+
+  if (target_len_ptr != NULL) {
+    *target_len_ptr = target_len;
+  }
+
+  if (target_ptr == NULL) {
+    return 0;
+  }
+
+  target = (char*)malloc(target_len + 1);
+  if (target == NULL) {
+    SetLastError(ERROR_OUTOFMEMORY);
+    return -1;
+  }
+
+  r = WideCharToMultiByte(CP_UTF8,
+                          0,
+                          w_source_ptr,
+                          w_source_len,
+                          target,
+                          target_len,
+                          NULL,
+                          NULL);
+  if (r != target_len) {
+    return -1;
+  }
+  target[target_len] = '\0';
+  *target_ptr = target;
+  return 0;
+}
+
+static int fs_readlink_handle(HANDLE handle, char** target_ptr,
+    uint64_t* target_len_ptr) {
+  char buffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+  REPARSE_DATA_BUFFER* reparse_data = (REPARSE_DATA_BUFFER*) buffer;
+  WCHAR* w_target;
+  DWORD w_target_len;
+  DWORD bytes;
+
+  if (!DeviceIoControl(handle,
+                       FSCTL_GET_REPARSE_POINT,
+                       NULL,
+                       0,
+                       buffer,
+                       sizeof buffer,
+                       &bytes,
+                       NULL)) {
+    return -1;
+  }
+
+  if (reparse_data->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+    /* Real symlink */
+    w_target = reparse_data->SymbolicLinkReparseBuffer.PathBuffer +
+        (reparse_data->SymbolicLinkReparseBuffer.SubstituteNameOffset /
+        sizeof(WCHAR));
+    w_target_len =
+        reparse_data->SymbolicLinkReparseBuffer.SubstituteNameLength /
+        sizeof(WCHAR);
+
+    /* Real symlinks can contain pretty much everything, but the only thing we
+     * really care about is undoing the implicit conversion to an NT namespaced
+     * path that CreateSymbolicLink will perform on absolute paths. If the path
+     * is win32-namespaced then the user must have explicitly made it so, and
+     * we better just return the unmodified reparse data. */
+    if (w_target_len >= 4 &&
+        w_target[0] == L'\\' &&
+        w_target[1] == L'?' &&
+        w_target[2] == L'?' &&
+        w_target[3] == L'\\') {
+      /* Starts with \??\ */
+      if (w_target_len >= 6 &&
+          ((w_target[4] >= L'A' && w_target[4] <= L'Z') ||
+           (w_target[4] >= L'a' && w_target[4] <= L'z')) &&
+          w_target[5] == L':' &&
+          (w_target_len == 6 || w_target[6] == L'\\')) {
+        /* \??\<drive>:\ */
+        w_target += 4;
+        w_target_len -= 4;
+
+      } else if (w_target_len >= 8 &&
+                 (w_target[4] == L'U' || w_target[4] == L'u') &&
+                 (w_target[5] == L'N' || w_target[5] == L'n') &&
+                 (w_target[6] == L'C' || w_target[6] == L'c') &&
+                 w_target[7] == L'\\') {
+        /* \??\UNC\<server>\<share>\ - make sure the final path looks like
+         * \\<server>\<share>\ */
+        w_target += 6;
+        w_target[0] = L'\\';
+        w_target_len -= 6;
+      }
+    }
+
+  } else if (reparse_data->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
+    /* Junction. */
+    w_target = reparse_data->MountPointReparseBuffer.PathBuffer +
+        (reparse_data->MountPointReparseBuffer.SubstituteNameOffset /
+        sizeof(WCHAR));
+    w_target_len = reparse_data->MountPointReparseBuffer.SubstituteNameLength /
+        sizeof(WCHAR);
+
+    /* Only treat junctions that look like \??\<drive>:\ as symlink. Junctions
+     * can also be used as mount points, like \??\Volume{<guid>}, but that's
+     * confusing for programs since they wouldn't be able to actually
+     * understand such a path when returned by uv_readlink(). UNC paths are
+     * never valid for junctions so we don't care about them. */
+    if (!(w_target_len >= 6 &&
+          w_target[0] == L'\\' &&
+          w_target[1] == L'?' &&
+          w_target[2] == L'?' &&
+          w_target[3] == L'\\' &&
+          ((w_target[4] >= L'A' && w_target[4] <= L'Z') ||
+           (w_target[4] >= L'a' && w_target[4] <= L'z')) &&
+          w_target[5] == L':' &&
+          (w_target_len == 6 || w_target[6] == L'\\'))) {
+      SetLastError(ERROR_SYMLINK_NOT_SUPPORTED);
+      return -1;
+    }
+
+    /* Remove leading \??\ */
+    w_target += 4;
+    w_target_len -= 4;
+
+  } else {
+    /* Reparse tag does not indicate a symlink. */
+    SetLastError(ERROR_SYMLINK_NOT_SUPPORTED);
+    return -1;
+  }
+
+  return fs_wide_to_utf8(w_target, w_target_len, target_ptr, target_len_ptr);
+}
+
+static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
+  HANDLE handle = INVALID_HANDLE_VALUE;
+  REPARSE_DATA_BUFFER *buffer = NULL;
+  int created = 0;
+  int target_len;
+  int is_absolute, is_long_path;
+  int needed_buf_size, used_buf_size, used_data_size, path_buf_len;
+  int start, len, i;
+  int add_slash;
+  DWORD bytes;
+  WCHAR* path_buf;
+
+  target_len = wcslen(path);
+  is_long_path = wcsncmp(path, LONG_PATH_PREFIX, LONG_PATH_PREFIX_LEN) == 0;
+
+  if (is_long_path) {
+    is_absolute = 1;
+  } else {
+    is_absolute = target_len >= 3 && IS_LETTER(path[0]) &&
+      path[1] == L':' && IS_SLASH(path[2]);
+  }
+
+  if (!is_absolute) {
+    /* Not supporting relative paths */
+    throw std::runtime_error("Not supporting relative paths.");
+  }
+
+  /* Do a pessimistic calculation of the required buffer size */
+  needed_buf_size =
+      FIELD_OFFSET(REPARSE_DATA_BUFFER, MountPointReparseBuffer.PathBuffer) +
+      JUNCTION_PREFIX_LEN * sizeof(WCHAR) +
+      2 * (target_len + 2) * sizeof(WCHAR);
+
+  /* Allocate the buffer */
+  buffer = (REPARSE_DATA_BUFFER*)malloc(needed_buf_size);
+  if (!buffer) {
+    throw std::runtime_error("Out of memory.");
+  }
+
+  /* Grab a pointer to the part of the buffer where filenames go */
+  path_buf = (WCHAR*)&(buffer->MountPointReparseBuffer.PathBuffer);
+  path_buf_len = 0;
+
+  /* Copy the substitute (internal) target path */
+  start = path_buf_len;
+
+  wcsncpy((WCHAR*)&path_buf[path_buf_len], JUNCTION_PREFIX,
+    JUNCTION_PREFIX_LEN);
+  path_buf_len += JUNCTION_PREFIX_LEN;
+
+  add_slash = 0;
+  for (i = is_long_path ? LONG_PATH_PREFIX_LEN : 0; path[i] != L'\0'; i++) {
+    if (IS_SLASH(path[i])) {
+      add_slash = 1;
+      continue;
+    }
+
+    if (add_slash) {
+      path_buf[path_buf_len++] = L'\\';
+      add_slash = 0;
+    }
+
+    path_buf[path_buf_len++] = path[i];
+  }
+  path_buf[path_buf_len++] = L'\\';
+  len = path_buf_len - start;
+
+  /* Set the info about the substitute name */
+  buffer->MountPointReparseBuffer.SubstituteNameOffset = start * sizeof(WCHAR);
+  buffer->MountPointReparseBuffer.SubstituteNameLength = len * sizeof(WCHAR);
+
+  /* Insert null terminator */
+  path_buf[path_buf_len++] = L'\0';
+
+  /* Copy the print name of the target path */
+  start = path_buf_len;
+  add_slash = 0;
+  for (i = is_long_path ? LONG_PATH_PREFIX_LEN : 0; path[i] != L'\0'; i++) {
+    if (IS_SLASH(path[i])) {
+      add_slash = 1;
+      continue;
+    }
+
+    if (add_slash) {
+      path_buf[path_buf_len++] = L'\\';
+      add_slash = 0;
+    }
+
+    path_buf[path_buf_len++] = path[i];
+  }
+  len = path_buf_len - start;
+  if (len == 2) {
+    path_buf[path_buf_len++] = L'\\';
+    len++;
+  }
+
+  /* Set the info about the print name */
+  buffer->MountPointReparseBuffer.PrintNameOffset = start * sizeof(WCHAR);
+  buffer->MountPointReparseBuffer.PrintNameLength = len * sizeof(WCHAR);
+
+  /* Insert another null terminator */
+  path_buf[path_buf_len++] = L'\0';
+
+  /* Calculate how much buffer space was actually used */
+  used_buf_size = FIELD_OFFSET(REPARSE_DATA_BUFFER, MountPointReparseBuffer.PathBuffer) +
+    path_buf_len * sizeof(WCHAR);
+  used_data_size = used_buf_size -
+    FIELD_OFFSET(REPARSE_DATA_BUFFER, MountPointReparseBuffer);
+
+  /* Put general info in the data buffer */
+  buffer->ReparseTag = IO_REPARSE_TAG_MOUNT_POINT;
+  buffer->ReparseDataLength = used_data_size;
+  buffer->Reserved = 0;
+
+  /* Create a new directory */
+  if (!CreateDirectoryW(new_path, NULL)) {
+    goto error;
+  }
+  created = 1;
+
+  /* Open the directory */
+  handle = CreateFileW(new_path,
+                       GENERIC_WRITE,
+                       0,
+                       NULL,
+                       OPEN_EXISTING,
+                       FILE_FLAG_BACKUP_SEMANTICS |
+                         FILE_FLAG_OPEN_REPARSE_POINT,
+                       NULL);
+  if (handle == INVALID_HANDLE_VALUE) {
+    goto error;
+  }
+
+  /* Create the actual reparse point */
+  if (!DeviceIoControl(handle,
+                       FSCTL_SET_REPARSE_POINT,
+                       buffer,
+                       used_buf_size,
+                       NULL,
+                       0,
+                       &bytes,
+                       NULL)) {
+    goto error;
+  }
+
+  /* Clean up */
+  CloseHandle(handle);
+  free(buffer);
+
+  return;
+
+error:
+  free(buffer);
+
+  if (handle != INVALID_HANDLE_VALUE) {
+    CloseHandle(handle);
+  }
+
+  if (created) {
+    RemoveDirectoryW(new_path);
+  }
+
+  throw std::runtime_error(get_last_error_message());
+}
+#endif
+
 namespace toyo {
 namespace fs {
-
-// static bool is_symlink(const std::string& p) noexcept {
-//   std::string path = path::normalize(p);
-// #ifdef _WIN32
-//   std::wstring wpath = toyo::charset::a2w(path);
-//   DWORD attrs = GetFileAttributesW(wpath.c_str());
-//   if (attrs == INVALID_FILE_ATTRIBUTES) {
-//     return false;
-//   }
-//   return ((attrs & FILE_ATTRIBUTE_REPARSE_POINT) == FILE_ATTRIBUTE_REPARSE_POINT);
-// #else
-//   struct stat info;
-//   code = ::lstat(path.c_str(), &info);
-//   if (code != 0) {
-//     return false;
-//   }
-//   return S_ISLNK(info.st_mode);
-// #endif
-// }
 
 #ifdef _WIN32
 dirent::dirent(): dirent_(nullptr) {}
@@ -514,13 +965,37 @@ bool access(const std::string& p, int mode) {
   std::string npath = path::normalize(p);
 #ifdef _WIN32
   std::wstring path = toyo::charset::a2w(npath);
-  return (_waccess(path.c_str(), mode) == 0);
+  // return (_waccess(path.c_str(), mode) == 0);
+
+  DWORD attr = GetFileAttributesW(path.c_str());
+
+  if (attr == INVALID_FILE_ATTRIBUTES) {
+    return false;
+    // throw std::runtime_error(get_last_error_message() + " access \"" + p + "\"");
+  }
+
+  /*
+   * Access is possible if
+   * - write access wasn't requested,
+   * - or the file isn't read-only,
+   * - or it's a directory.
+   * (Directories cannot be read-only on Windows.)
+   */
+  if (!(mode & fs::w_ok) ||
+      !(attr & FILE_ATTRIBUTE_READONLY) ||
+      (attr & FILE_ATTRIBUTE_DIRECTORY)) {
+    return true;
+  } else {
+    return false;
+    // throw cerror(EPERM, "access \"" + p + "\"");
+  }
 #else
   return (::access(npath.c_str(), mode) == 0);
 #endif
 }
 
 bool exists(const std::string& p) {
+  // return fs::access(p, f_ok);
   bool baccess = fs::access(p, f_ok);
   if (baccess) {
     return true;
@@ -581,7 +1056,91 @@ void unlink(const std::string& p) {
   int code = 0;
   std::string path = path::normalize(p);
 #ifdef _WIN32
-  code = _wunlink(toyo::charset::a2w(path).c_str());
+  // code = _wunlink(toyo::charset::a2w(path).c_str());
+
+  std::wstring pathws = toyo::charset::a2w(path);
+  const WCHAR* pathw = pathws.c_str();
+  HANDLE handle;
+  BY_HANDLE_FILE_INFORMATION info;
+  FILE_DISPOSITION_INFORMATION disposition;
+  IO_STATUS_BLOCK iosb;
+  NTSTATUS status;
+
+  handle = CreateFileW(pathw,
+                       FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | DELETE,
+                       FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                       NULL,
+                       OPEN_EXISTING,
+                       FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
+                       NULL);
+
+  if (handle == INVALID_HANDLE_VALUE) {
+    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+  }
+
+  if (!GetFileInformationByHandle(handle, &info)) {
+    CloseHandle(handle);
+    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+  }
+
+  if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+    /* Do not allow deletion of directories, unless it is a symlink. When the
+     * path refers to a non-symlink directory, report EPERM as mandated by
+     * POSIX.1. */
+
+    /* Check if it is a reparse point. If it's not, it's a normal directory. */
+    if (!(info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+      SetLastError(ERROR_ACCESS_DENIED);
+      CloseHandle(handle);
+      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    }
+
+    /* Read the reparse point and check if it is a valid symlink. If not, don't
+     * unlink. */
+    if (fs_readlink_handle(handle, NULL, NULL) < 0) {
+      DWORD error = GetLastError();
+      if (error == ERROR_SYMLINK_NOT_SUPPORTED)
+        error = ERROR_ACCESS_DENIED;
+      SetLastError(error);
+      CloseHandle(handle);
+      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    }
+  }
+
+  if (info.dwFileAttributes & FILE_ATTRIBUTE_READONLY) {
+    /* Remove read-only attribute */
+    FILE_BASIC_INFORMATION basic = { 0 };
+
+    basic.FileAttributes = (info.dwFileAttributes & ~FILE_ATTRIBUTE_READONLY) |
+                           FILE_ATTRIBUTE_ARCHIVE;
+
+    status = NtSetInformationFile(handle,
+                                   &iosb,
+                                   &basic,
+                                   sizeof basic,
+                                   FileBasicInformation);
+    if (!NT_SUCCESS(status)) {
+      SetLastError(RtlNtStatusToDosError(status));
+      CloseHandle(handle);
+      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    }
+  }
+
+  /* Try to set the delete flag. */
+  disposition.DeleteFile = TRUE;
+  status = NtSetInformationFile(handle,
+                                 &iosb,
+                                 &disposition,
+                                 sizeof disposition,
+                                 FileDispositionInformation);
+  if (NT_SUCCESS(status)) {
+    CloseHandle(handle);
+    return;
+  } else {
+    CloseHandle(handle);
+    SetLastError(RtlNtStatusToDosError(status));
+    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+  }
 #else
   code = ::unlink(path.c_str());
 #endif
@@ -658,37 +1217,36 @@ void symlink(const std::string& o, const std::string& n) {
 #endif
 }
 
-#ifdef _WIN32
-static std::string get_last_error_message() {
-  int size = 0;
-  get_last_error(nullptr, &size);
-  char* buf = new char[size];
-  get_last_error(buf, &size);
-  std::string res(buf);
-  delete buf;
-  return res;
-}
-#endif
-
 void symlink(const std::string& o, const std::string& n, symlink_type type) {
   std::string oldpath = path::normalize(o);
   std::string newpath = path::normalize(n);
 #ifdef _WIN32
+  int flags = 0;
   if (type == symlink_type_directory) {
-    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), SYMBOLIC_LINK_FLAG_DIRECTORY)) {
-      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+    flags = file_symlink_usermode_flag | SYMBOLIC_LINK_FLAG_DIRECTORY;
+    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), flags)) {
+      int err = GetLastError();
+      if (err == ERROR_INVALID_PARAMETER && (flags & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))  {
+        file_symlink_usermode_flag = 0;
+        fs::symlink(o, n, type);
+      } else {
+        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+      }
     }
   } else if (type == symlink_type_file) {
-    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), 0x0)) {
-      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+    flags = file_symlink_usermode_flag;
+    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), flags)) {
+      int err = GetLastError();
+      if (err == ERROR_INVALID_PARAMETER && (flags & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))  {
+        file_symlink_usermode_flag = 0;
+        fs::symlink(o, n, type);
+      } else {
+        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+      }
     }
   } else if (type == symlink_type_junction) {
     oldpath = path::resolve(oldpath);
-    try {
-      fs::symlink(oldpath, n);
-    } catch (const std::exception&) {
-      throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
-    }
+    fs_create_junction(toyo::charset::a2w(oldpath).c_str(), toyo::charset::a2w(newpath).c_str());
   } else {
     throw std:: runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");
   }

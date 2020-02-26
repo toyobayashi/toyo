@@ -133,7 +133,7 @@ int __describe(const char * description, const char * testCaseNames, TestCase te
             wchar_t buf[2] = { 0, 0 };
             MultiByteToWideChar(CP_UTF8, 0, s, -1, buf, 2);
             char ss[4] = { 0, 0, 0, 0 };
-            WideCharToMultiByte(CP_ACP, 0, buf, -1, ss, 4, NULL, NULL);
+            WideCharToMultiByte(GetConsoleOutputCP(), 0, buf, -1, ss, 4, NULL, NULL);
             printf("    %s ", ss);
 #else
             printf("    %s ", s);
