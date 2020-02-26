@@ -5,7 +5,7 @@
       "name": "MSVC",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\build\\win32\\Debug\\toyotest.exe",
+      "program": "${workspaceFolder}\\build\\win\\Win32\\Debug\\toyotest.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

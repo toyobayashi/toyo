@@ -322,6 +322,38 @@ static int test_copy() {
   return 0;
 }
 
+static int test_read_write() {
+  std::string data = process::platform() + "测试\r\n";
+  std::string append = "append";
+  try {
+    fs::write_file("testwrite.txt", data);
+  } catch (const std::exception& err) {
+    std::cout << err.what() << std::endl;
+    return -1;
+  }
+
+  expect(fs::read_file_to_string("testwrite.txt") == data)
+  fs::append_file("testwrite.txt", append);
+  expect(fs::read_file_to_string("testwrite.txt") == (data + append))
+  fs::remove("testwrite.txt");
+
+  fs::mkdirs("testmkdir");
+  try {
+    std::cout << fs::read_file_to_string("testmkdir") << std::endl;
+    return -1;
+  } catch (const std::exception& err) {
+    fs::remove("testmkdir");
+  }
+
+  try {
+    std::cout << fs::read_file_to_string("notexists") << std::endl;
+    return -1;
+  } catch (const std::exception& err) {
+    expect(std::string(err.what()).find("No such file or directory") != std::string::npos)
+  }
+  return 0;
+}
+
 int main() {
   int code = 0;
   int fail = 0;
@@ -347,7 +379,8 @@ int main() {
     test_readdir,
     test_stat,
     test_mkdirs,
-    test_copy);
+    test_copy,
+    test_read_write);
 
   if (code != 0) {
     fail++;

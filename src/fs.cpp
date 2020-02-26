@@ -795,6 +795,20 @@ fs::dir opendir(const std::string& p) {
   return fs::dir(p);
 }
 
+stats::stats():
+  is_link_(false),
+  dev(0),
+  ino(0),
+  mode(0),
+  nlink(0),
+  gid(0),
+  uid(0),
+  rdev(0),
+  size(0),
+  atime(0),
+  mtime(0),
+  ctime(0) {}
+
 stats::stats(const char* path, bool follow_link): stats(std::string(path), follow_link) {}
 
 stats::stats(const std::string& p, bool follow_link) {
@@ -1299,6 +1313,98 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
   ::fclose(df);
 #endif
 
+}
+
+std::vector<unsigned char> read_file(const std::string& p) {
+  std::string path = path::normalize(p);
+  // if (!fs::exists(path)) {
+  //   throw cerror(ENOENT, "open \"" + p + "\"");
+  // }
+
+  // fs::Stats stat = fs::statSync(path);
+  // if (stat.isDirectory()) {
+  //   throw std::exception((String("EISDIR: illegal operation on a directory, read \"") + path + "\"").toCString());
+  // }
+
+  fs::stats stat;
+  try {
+    stat = fs::lstat(path);
+  } catch (const std::exception& e) {
+    throw cerror(errno, "open \"" + p + "\"");
+  }
+  if (stat.is_directory()) {
+    throw cerror(EISDIR, "read \"" + p + "\"");
+  }
+
+  long size = stat.size;
+
+#ifdef _WIN32
+  FILE* fp = ::_wfopen(toyo::charset::a2w(path).c_str(), L"rb");
+#else
+  FILE* fp = ::fopen(path.c_str(), "rb");
+#endif
+  if (!fp) {
+    throw cerror(errno, "open \"" + p + "\"");
+  }
+
+  unsigned char* buf = new unsigned char[size];
+  memset(buf, 0, sizeof(unsigned char) * size);
+  size_t read = ::fread(buf, sizeof(unsigned char), size, fp);
+  ::fclose(fp);
+  if (read != size) {
+    delete[] buf;
+    throw cerror(errno, "read \"" + p + "\"");
+  }
+  std::vector<unsigned char> res(buf, buf + size);
+  delete[] buf;
+  return res;
+}
+
+std::string read_file_to_string(const std::string& p) {
+  std::vector<unsigned char> buf = fs::read_file(p);
+  return std::string(buf.begin(), buf.end());
+}
+
+static void _write_file(const std::string& p, const std::vector<unsigned char>& buf, std::string mode) {
+  if (fs::exists(p)) {
+    if (fs::lstat(p).is_directory()) {
+      throw cerror(EISDIR, "open \"" + p + "\"");
+    }
+  }
+
+  std::string path = path::normalize(p);
+
+#ifdef _WIN32
+  FILE* fp = ::_wfopen(toyo::charset::a2w(path).c_str(), toyo::charset::a2w(mode).c_str());
+#else
+  FILE* fp = ::fopen(path.c_str(), mode.c_str());
+#endif
+
+  if (!fp) {
+    throw cerror(errno, "open \"" + p + "\"");
+  }
+
+  ::fwrite(buf.data(), sizeof(unsigned char), buf.size(), fp);
+  ::fflush(fp);
+  ::fclose(fp);
+}
+
+void write_file(const std::string& p, const std::vector<unsigned char>& buf) {
+  _write_file(p, buf, "wb");
+}
+
+void write_file(const std::string& p, const std::string& str) {
+  std::vector<unsigned char> buf(str.begin(), str.end());
+  fs::write_file(p, buf);
+}
+
+void append_file(const std::string& p, const std::vector<unsigned char>& buf) {
+  _write_file(p, buf, "ab");
+}
+
+void append_file(const std::string& p, const std::string& str) {
+  std::vector<unsigned char> buf(str.begin(), str.end());
+  fs::append_file(p, buf);
 }
 
 }
