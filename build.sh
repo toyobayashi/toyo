@@ -4,8 +4,8 @@ else
   type="$1"
 fi
 
-uname=`uname`
-os=${uname,,}
+unamestr=`uname`
+os=${unamestr,,}
 
 mkdir -p "./build/$os/$type"
 cd "./build/$os/$type"
@@ -14,7 +14,6 @@ cmake --build .
 cd ../../..
 
 if [ "$type" == "Release" ]; then
-  uname=`uname`
   mkdir -p "dist/include/toyo"
   mkdir -p "dist/$os/lib"
   mkdir -p "dist/$os/bin"
