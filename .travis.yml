@@ -5,6 +5,8 @@ os:
   - linux
   - osx
 
+before_install:
+  - if [ "$TRAVIS_OS_NAME" != "windows" ]; then chmod +x ./build.sh; fi
 script:
   - cmake --version
   - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat; else ./build.sh; fi
