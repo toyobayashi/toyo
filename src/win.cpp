@@ -33,7 +33,7 @@ int get_last_error(char* message, int* size) {
 
     if (!message) {
       if (size) {
-        *size = utf8str.length() + 1;
+        *size = (int)utf8str.length() + 1;
       }
     } else {
       if (size) {

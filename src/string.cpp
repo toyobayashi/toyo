@@ -46,7 +46,7 @@ std::string substring(const std::string& self, int indexStart, int indexEnd) {
 }
 
 std::wstring wslice(const std::wstring& self, int start, int end) {
-  size_t _length = self.length();
+  int _length = (int)self.length();
   end--;
   start = start < 0 ? (_length + (start % _length)) : start % _length;
   end = end < 0 ? (_length + (end % _length)) : end % _length;
@@ -64,7 +64,7 @@ std::wstring wslice(const std::wstring& self, int start, int end) {
 }
 
 std::wstring wslice(const std::wstring& self, int start) {
-  return wslice(self, start, self.length());
+  return wslice(self, start, (int)self.length());
 }
 
 std::string slice(const std::string& self, int start, int end) {
@@ -113,7 +113,7 @@ int wlast_index_of(const std::wstring& self, const std::wstring& searchValue, in
 }
 
 int wlast_index_of(const std::wstring& self, const std::wstring& searchValue) {
-  return wlast_index_of(self, searchValue, self.length());
+  return wlast_index_of(self, searchValue, (int)self.length());
 }
 
 }

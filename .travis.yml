@@ -1,0 +1,11 @@
+language: cpp
+
+os:
+  - windows
+  - linux
+  - osx
+
+script:
+  - cmake --version
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat; else ./build.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/toyotest.exe; else ./build/linux/Release/toyotest; fi

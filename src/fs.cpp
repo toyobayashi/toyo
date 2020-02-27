@@ -338,7 +338,7 @@ static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
   DWORD bytes;
   WCHAR* path_buf;
 
-  target_len = wcslen(path);
+  target_len = (int)wcslen(path);
   is_long_path = wcsncmp(path, LONG_PATH_PREFIX, LONG_PATH_PREFIX_LEN) == 0;
 
   if (is_long_path) {
@@ -394,8 +394,8 @@ static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
   len = path_buf_len - start;
 
   /* Set the info about the substitute name */
-  buffer->MountPointReparseBuffer.SubstituteNameOffset = start * sizeof(WCHAR);
-  buffer->MountPointReparseBuffer.SubstituteNameLength = len * sizeof(WCHAR);
+  buffer->MountPointReparseBuffer.SubstituteNameOffset = (USHORT)(start * sizeof(WCHAR));
+  buffer->MountPointReparseBuffer.SubstituteNameLength = (USHORT)(len * sizeof(WCHAR));
 
   /* Insert null terminator */
   path_buf[path_buf_len++] = L'\0';
@@ -423,8 +423,8 @@ static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
   }
 
   /* Set the info about the print name */
-  buffer->MountPointReparseBuffer.PrintNameOffset = start * sizeof(WCHAR);
-  buffer->MountPointReparseBuffer.PrintNameLength = len * sizeof(WCHAR);
+  buffer->MountPointReparseBuffer.PrintNameOffset = (USHORT)(start * sizeof(WCHAR));
+  buffer->MountPointReparseBuffer.PrintNameLength = (USHORT)(len * sizeof(WCHAR));
 
   /* Insert another null terminator */
   path_buf[path_buf_len++] = L'\0';

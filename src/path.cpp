@@ -98,7 +98,7 @@ static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRo
               lastSegmentLength = 0;
             } else {
               res = toyo::string::wslice(res, 0, lastSlashIndex);
-              lastSegmentLength = res.length() - 1 - toyo::string::wlast_index_of(res, separator);
+              lastSegmentLength = (int)res.length() - 1 - toyo::string::wlast_index_of(res, separator);
             }
             lastSlash = i;
             dots = 0;
@@ -141,10 +141,10 @@ namespace win32 {
 
   std::string normalize(const std::string& p) {
     std::wstring path = toyo::charset::a2w(p);
-    const size_t len = path.length();
+    const int len = (int)path.length();
     if (len == 0)
       return ".";
-    size_t rootEnd = 0;
+    int rootEnd = 0;
     std::wstring* device = nullptr;
     bool isAbsolute = false;
     const unsigned short code = path[0];
@@ -154,8 +154,8 @@ namespace win32 {
         isAbsolute = true;
 
         if (_isPathSeparator(path[1])) {
-          size_t j = 2;
-          size_t last = j;
+          int j = 2;
+          int last = j;
           for (; j < len; ++j) {
             if (_isPathSeparator(path[j]))
               break;
@@ -253,7 +253,7 @@ namespace win32 {
     std::wstring resolvedTail = L"";
     bool resolvedAbsolute = false;
 
-    for (int i = arguments.size() - 1; i >= -1; i--) {
+    for (int i = (int)arguments.size() - 1; i >= -1; i--) {
       std::wstring path = L"";
       if (i >= 0) {
         path = arguments[i];
@@ -281,8 +281,8 @@ namespace win32 {
         continue;
       }
 
-      size_t len = path.length();
-      size_t rootEnd = 0;
+      int len = (int)path.length();
+      int rootEnd = 0;
       std::wstring device = L"";
       bool isAbsolute = false;
       const unsigned short code = path[0];
@@ -292,8 +292,8 @@ namespace win32 {
           isAbsolute = true;
 
           if (_isPathSeparator(path[1])) {
-            size_t j = 2;
-            size_t last = j;
+            int j = 2;
+            int last = j;
             for (; j < len; ++j) {
               if (_isPathSeparator(path[j]))
                 break;
@@ -561,7 +561,7 @@ namespace win32 {
       }
     }
 
-    for (i = path.length() - 1; i >= start; --i) {
+    for (i = (int)path.length() - 1; i >= start; --i) {
       if (_isPathSeparator(path[i])) {
         if (!matchedSlash) {
           start = i + 1;
@@ -598,9 +598,9 @@ namespace win32 {
     if (ext.length() > 0 && ext.length() <= path.length()) {
       if (ext.length() == path.length() && ext == path)
         return "";
-      int extIdx = ext.length() - 1;
+      int extIdx = (int)ext.length() - 1;
       int firstNonSlashEnd = -1;
-      for (i = path.length() - 1; i >= start; --i) {
+      for (i = (int)path.length() - 1; i >= start; --i) {
         const int code = path[i];
         if (_isPathSeparator(code)) {
           if (!matchedSlash) {
@@ -628,7 +628,7 @@ namespace win32 {
       if (start == end)
         end = firstNonSlashEnd;
       else if (end == -1)
-        end = path.length();
+        end = (int)path.length();
       return toyo::charset::w2a(toyo::string::wslice(path, start, end));
     }
 
@@ -650,7 +650,7 @@ namespace win32 {
       start = startPart = 2;
     }
 
-    for (int i = path.length() - 1; i >= start; --i) {
+    for (int i = (int)path.length() - 1; i >= start; --i) {
       const unsigned short code = path[i];
       if (_isPathSeparator(code)) {
         if (!matchedSlash) {
@@ -708,7 +708,7 @@ namespace win32 {
       if (from[fromStart] != CHAR_BACKWARD_SLASH)
         break;
     }
-    int fromEnd = from.length();
+    int fromEnd = (int)from.length();
     for (; fromEnd - 1 > fromStart; --fromEnd) {
       if (from[fromEnd - 1] != CHAR_BACKWARD_SLASH)
         break;
@@ -720,7 +720,7 @@ namespace win32 {
       if (to[toStart] != CHAR_BACKWARD_SLASH)
         break;
     }
-    int toEnd = to.length();
+    int toEnd = (int)to.length();
     for (; toEnd - 1 > toStart; --toEnd) {
       if (to[toEnd - 1] != CHAR_BACKWARD_SLASH)
         break;
@@ -815,7 +815,7 @@ namespace posix {
     std::wstring resolvedPath = L"";
     bool resolvedAbsolute = false;
 
-    for (int i = arguments.size() - 1; i >= -1 && !resolvedAbsolute; i--) {
+    for (int i = (int)arguments.size() - 1; i >= -1 && !resolvedAbsolute; i--) {
       std::wstring path;
       if (i >= 0)
         path = arguments[i];
@@ -885,7 +885,7 @@ namespace posix {
     const bool hasRoot = (path[0] == CHAR_FORWARD_SLASH);
     int end = -1;
     bool matchedSlash = true;
-    for (int i = path.length() - 1; i >= 1; --i) {
+    for (int i = (int)path.length() - 1; i >= 1; --i) {
       if (path[i] == CHAR_FORWARD_SLASH) {
         if (!matchedSlash) {
           end = i;
@@ -914,7 +914,7 @@ namespace posix {
     bool matchedSlash = true;
     int i;
 
-    for (i = path.length() - 1; i >= 0; --i) {
+    for (i = (int)path.length() - 1; i >= 0; --i) {
       if (path[i] == CHAR_FORWARD_SLASH) {
         if (!matchedSlash) {
           start = i + 1;
@@ -943,9 +943,9 @@ namespace posix {
     if (ext.length() > 0 && ext.length() <= path.length()) {
       if (ext.length() == path.length() && ext == path)
         return "";
-      int extIdx = ext.length() - 1;
+      int extIdx = (int)ext.length() - 1;
       int firstNonSlashEnd = -1;
-      for (i = path.length() - 1; i >= 0; --i) {
+      for (i = (int)path.length() - 1; i >= 0; --i) {
         const unsigned short code = path[i];
         if (code == CHAR_FORWARD_SLASH) {
           if (!matchedSlash) {
@@ -973,7 +973,7 @@ namespace posix {
       if (start == end)
         end = firstNonSlashEnd;
       else if (end == -1)
-        end = path.length();
+        end = (int)path.length();
       return toyo::charset::w2a(toyo::string::wslice(path, start, end));
     }
 
@@ -987,7 +987,7 @@ namespace posix {
     int end = -1;
     bool matchedSlash = true;
     int preDotState = 0;
-    for (int i = path.length() - 1; i >= 0; --i) {
+    for (int i = (int)path.length() - 1; i >= 0; --i) {
       const unsigned short code = path[i];
       if (code == CHAR_FORWARD_SLASH) {
         if (!matchedSlash) {
@@ -1039,7 +1039,7 @@ namespace posix {
       if (from[fromStart] != CHAR_FORWARD_SLASH)
         break;
     }
-    int fromEnd = from.length();
+    int fromEnd = (int)from.length();
     int fromLen = (fromEnd - fromStart);
 
     int toStart = 1;
@@ -1047,7 +1047,7 @@ namespace posix {
       if (to[toStart] != CHAR_FORWARD_SLASH)
         break;
     }
-    int toEnd = to.length();
+    int toEnd = (int)to.length();
     int toLen = (toEnd - toStart);
 
     // Compare paths to find the longest common path from root
@@ -1200,7 +1200,7 @@ path::path(const std::string& p, bool is_win32): path() {
       return;
     }
 
-    int len = path.length();
+    int len = (int)path.length();
     int rootEnd = 0;
     unsigned short code = path[0];
 
@@ -1269,7 +1269,7 @@ path::path(const std::string& p, bool is_win32): path() {
     int startPart = rootEnd;
     int end = -1;
     bool matchedSlash = true;
-    int i = path.length() - 1;
+    int i = (int)path.length() - 1;
 
     int preDotState = 0;
 
@@ -1333,7 +1333,7 @@ path::path(const std::string& p, bool is_win32): path() {
     int startPart = 0;
     int end = -1;
     bool matchedSlash = true;
-    int i = path.length() - 1;
+    int i = (int)path.length() - 1;
 
     int preDotState = 0;
 
