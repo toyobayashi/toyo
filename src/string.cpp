@@ -9,7 +9,7 @@ namespace toyo {
 namespace string {
 
 std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) {
-  size_t l = self.length();
+  int l = (int)self.length();
   if (l == 0)
     return std::wstring({ self[0], L'\0' });
   if (indexStart >= l) {
@@ -27,14 +27,14 @@ std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) 
   if (indexStart == indexEnd) return L"";
 
   if (indexEnd < indexStart) {
-    size_t tmp = indexStart;
+    int tmp = indexStart;
     indexStart = indexEnd;
     indexEnd = tmp;
   }
 
   std::wstring res = L"";
 
-  for (size_t i = indexStart; i < indexEnd; i++) {
+  for (int i = indexStart; i < indexEnd; i++) {
     res += self[i];
   }
 
@@ -96,14 +96,14 @@ std::string to_lower_case(const std::string& self) {
 }
 
 int wlast_index_of(const std::wstring& self, const std::wstring& searchValue, int fromIndex) {
-  size_t thisLength = self.length();
+  int thisLength = (int)self.length();
   if (fromIndex < 0) {
     fromIndex = 0;
   } else if (fromIndex > thisLength) {
     fromIndex = thisLength;
   }
 
-  size_t len = searchValue.length();
+  int len = (int)searchValue.length();
   for (int i = fromIndex - 1; i >= 0; i--) {
     if (searchValue == wsubstring(self, i, i + len)) {
       return i;

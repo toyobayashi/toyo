@@ -74,15 +74,15 @@ std::string w2a(const std::wstring& wstr) {
   return res;
 }
 
-std::string w2acp(const std::wstring& wstr) {
+static std::string _w2a(const std::wstring& wstr, int code_page) {
 #ifdef _WIN32
-  int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
+  int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
   if (len == -1) {
     throw std::exception("Convert failed.");
   }
   char* buf = new char[len];
   memset(buf, 0, len * sizeof(char));
-  WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, buf, len, NULL, NULL);
+  WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, buf, len, NULL, NULL);
   std::string res(buf);
   delete[] buf;
   return res;
@@ -91,9 +91,33 @@ std::string w2acp(const std::wstring& wstr) {
 #endif
 }
 
+std::string w2acp(const std::wstring& wstr) {
+#ifdef _WIN32
+  return _w2a(wstr, CP_ACP);
+#else
+  return w2a(wstr);
+#endif
+}
+
 std::string a2acp(const std::string& str) {
 #ifdef _WIN32
   return w2acp(a2w(str));
+#else
+  return str;
+#endif
+}
+
+std::string w2ocp(const std::wstring& wstr) {
+#ifdef _WIN32
+  return _w2a(wstr, GetConsoleOutputCP());
+#else
+  return w2a(wstr);
+#endif
+}
+
+std::string a2ocp(const std::string& str) {
+#ifdef _WIN32
+  return w2ocp(a2w(str));
 #else
   return str;
 #endif

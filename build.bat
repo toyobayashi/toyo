@@ -28,10 +28,10 @@ if not exist %cmakebuilddir% mkdir %cmakebuilddir%
 cd %cmakebuilddir%
 
 echo ========================================
-echo %cd%$ cmake -A %arch% ..\..\..
+echo %cd%$ cmake -A %arch% -DCMAKE_USER_MAKE_RULES_OVERRIDE=cmake\vcruntime.cmake ..\..\..
 echo ========================================
 
-cmake -A %arch% ..\..\..
+cmake -A %arch% -DCMAKE_USER_MAKE_RULES_OVERRIDE=cmake\vcruntime.cmake ..\..\..
 
 echo ========================================
 echo %cd%$ cmake --build . --config %mode%
@@ -51,9 +51,11 @@ set exesource=%cmakebuilddir%\%mode%\*.exe
 if /i "%mode%"=="Release" (
   if not exist %libout% mkdir %libout%
   if exist %libsource% copy %libsource% %libout%\*>nul
-  if exist %dllsource% copy %dllsource% %libout%\*>nul
+
   if not exist %binout% mkdir %binout%
   if exist %exesource% copy %exesource% %binout%\*>nul
+  if exist %dllsource% copy %dllsource% %binout%\*>nul
+
   if not exist %headerout% mkdir %headerout%
   if exist include\* copy include\* %headerout%\*>nul
 )

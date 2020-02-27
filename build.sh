@@ -16,7 +16,8 @@ if [ "$type" == "Release" ]; then
   mkdir -p "dist/${uname,,}/lib"
   mkdir -p "dist/${uname,,}/bin"
   cp ./include/* dist/include/toyo
-  cp ./build/linux/Release/{*.a,*.so,*.dylib} "dist/${uname,,}/lib"
+  cp ./build/linux/Release/*.a "dist/${uname,,}/lib"
+  cp ./build/linux/Release/{*.so,*.dylib} "dist/${uname,,}/bin"
 
   src_dir="./build/linux/Release"
   dest_dir="dist/${uname,,}/bin"

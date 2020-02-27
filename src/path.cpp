@@ -76,8 +76,8 @@ static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRo
   int lastSlash = -1;
   int dots = 0;
   unsigned short code = 0;
-  for (int i = 0; i <= path.length(); ++i) {
-    if (i < path.length())
+  for (int i = 0; i <= (int)path.length(); ++i) {
+    if (i < (int)path.length())
       code = path[i];
     else if (isPathSeparator(code))
       break;
@@ -410,7 +410,7 @@ namespace win32 {
       }
     }
     if (needsReplace) {
-      for (; slashCount < joined.length(); ++slashCount) {
+      for (; slashCount < (int)joined.length(); ++slashCount) {
         if (!_isPathSeparator(joined[slashCount]))
           break;
       }
@@ -443,7 +443,7 @@ namespace win32 {
 
   std::string dirname(const std::string& p) {
     std::wstring path = toyo::charset::a2w(p);
-    const size_t len = path.length();
+    const int len = (int)path.length();
     if (len == 0)
       return ".";
     int rootEnd = -1;
@@ -704,7 +704,7 @@ namespace win32 {
       return "";
 
     int fromStart = 0;
-    for (; fromStart < from.length(); ++fromStart) {
+    for (; fromStart < (int)from.length(); ++fromStart) {
       if (from[fromStart] != CHAR_BACKWARD_SLASH)
         break;
     }
@@ -716,7 +716,7 @@ namespace win32 {
     int fromLen = (fromEnd - fromStart);
 
     int toStart = 0;
-    for (; toStart < to.length(); ++toStart) {
+    for (; toStart < (int)to.length(); ++toStart) {
       if (to[toStart] != CHAR_BACKWARD_SLASH)
         break;
     }
@@ -1035,7 +1035,7 @@ namespace posix {
       return "";
 
     int fromStart = 1;
-    for (; fromStart < from.length(); ++fromStart) {
+    for (; fromStart < (int)from.length(); ++fromStart) {
       if (from[fromStart] != CHAR_FORWARD_SLASH)
         break;
     }
@@ -1043,7 +1043,7 @@ namespace posix {
     int fromLen = (fromEnd - fromStart);
 
     int toStart = 1;
-    for (; toStart < to.length(); ++toStart) {
+    for (; toStart < (int)to.length(); ++toStart) {
       if (to[toStart] != CHAR_FORWARD_SLASH)
         break;
     }

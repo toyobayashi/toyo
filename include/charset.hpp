@@ -15,6 +15,10 @@ std::string w2acp(const std::wstring& wstr);
 
 std::string a2acp(const std::string& str);
 
+std::string w2ocp(const std::wstring& wstr);
+
+std::string a2ocp(const std::string& str);
+
 } // charset
 
 } // toyo

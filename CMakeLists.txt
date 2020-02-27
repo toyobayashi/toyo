@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.6)
 
 project(toyo)
 
@@ -20,7 +20,7 @@ add_library(toyo STATIC
 
 if(WIN32 AND MSVC)
   target_link_libraries(toyo ntdll)
-  set_target_properties(toyo PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  # set_target_properties(toyo PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   target_compile_options(toyo PRIVATE /utf-8)
   target_compile_definitions(toyo PRIVATE
     _CRT_SECURE_NO_WARNINGS
@@ -44,7 +44,7 @@ target_link_libraries(toyotest toyo)
 
 if(WIN32 AND MSVC)
   set_directory_properties(PROPERTIES VS_STARTUP_PROJECT toyotest)
-  set_target_properties(toyotest PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  # set_target_properties(toyotest PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   target_compile_options(toyotest PRIVATE /utf-8)
   target_compile_definitions(toyotest PRIVATE
     _CRT_SECURE_NO_WARNINGS

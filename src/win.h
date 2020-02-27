@@ -8,6 +8,14 @@
 #include <Windows.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int get_last_error(char* message, int* size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

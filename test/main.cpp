@@ -65,8 +65,8 @@ static int test_extname() {
 
 static int test_resolve() {
 #ifdef _WIN32
-  expect(path::resolve("/foo/bar", "/tmp/file/") == "C:\\tmp\\file")
-  expect(path::resolve("/foo/bar", "./baz") == "C:\\foo\\bar\\baz")
+  expect(path::resolve("/foo/bar", "/tmp/file/").substr(1) == ":\\tmp\\file")
+  expect(path::resolve("/foo/bar", "./baz").substr(1) == ":\\foo\\bar\\baz")
 #else
   expect(path::resolve("/foo/bar", "/tmp/file/") == "/tmp/file")
   expect(path::resolve("/foo/bar", "./baz") == "/foo/bar/baz")
@@ -137,7 +137,7 @@ static int test_readdir() {
   auto ls = toyo::fs::readdir(path::__dirname() + "/any/..");
   expect(ls.size() > 0)
   std::cout << "[";
-  for (int i = 0; i < ls.size(); i++) {
+  for (size_t i = 0; i < ls.size(); i++) {
     std::cout << "\"" << ls[i] << "\"";
     if (i != ls.size() - 1) {
       std::cout << ", ";
@@ -149,7 +149,7 @@ static int test_readdir() {
   auto ls2 = toyo::fs::readdir("emptydir");
   expect(ls2.size() == 0)
   std::cout << "[";
-  for (int i = 0; i < ls2.size(); i++) {
+  for (size_t i = 0; i < ls2.size(); i++) {
     std::cout << "\"" << ls2[i] << "\"";
     if (i != ls2.size() - 1) {
       std::cout << ", ";
@@ -240,7 +240,7 @@ static int test_stat() {
     fs::remove("slk");
     expect(!fs::exists("slk"))
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
   }
 
   try {
@@ -249,7 +249,7 @@ static int test_stat() {
     fs::remove("slk2");
     expect(!fs::exists("slk2"))
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
   }
 
   return 0;
@@ -341,7 +341,7 @@ static int test_read_write() {
   try {
     std::cout << fs::read_file_to_string("testmkdir") << std::endl;
     return -1;
-  } catch (const std::exception& err) {
+  } catch (const std::exception&) {
     fs::remove("testmkdir");
   }
 

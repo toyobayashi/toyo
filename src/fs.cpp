@@ -1022,7 +1022,7 @@ bool exists(const std::string& p) {
   try {
     fs::lstat(p);
     return true;
-  } catch (const std::exception& err) {
+  } catch (const std::exception&) {
     return false;
   }
 }
@@ -1329,7 +1329,7 @@ std::vector<unsigned char> read_file(const std::string& p) {
   fs::stats stat;
   try {
     stat = fs::lstat(path);
-  } catch (const std::exception& e) {
+  } catch (const std::exception&) {
     throw cerror(errno, "open \"" + p + "\"");
   }
   if (stat.is_directory()) {
