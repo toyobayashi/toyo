@@ -170,8 +170,9 @@ int oid_create_from_hex_string(const char* hex_string, object_id* oid) {
   uint8_t i = 0;
   oid_init();
   while (i < 24) {
-    buf[n++] =
-      (decode_lookup[hex_string[i++]] << 4) | decode_lookup[hex_string[i++]];
+    uint8_t high = (decode_lookup[hex_string[i++]] << 4);
+    uint8_t low = decode_lookup[hex_string[i++]];
+    buf[n++] = (high | low);
   }
   return oid_construct_with_buf(oid, buf, 12);
 }
