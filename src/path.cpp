@@ -1177,7 +1177,7 @@ std::string __filename() {
 #elif defined(__APPLE__)
   char buf[1024] = { 0 };
   unsigned size = 1023;
-  int code = _NSGetExecutablePath(path, &size);
+  int code = _NSGetExecutablePath(buf, &size);
   // path[size] = '\0';
   if (code != 0) return "";
   return buf;
