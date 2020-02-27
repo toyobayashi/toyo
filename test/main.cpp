@@ -307,11 +307,13 @@ static int test_mkdirs() {
 }
 
 static int test_copy() {
-  auto s = path::__filename();
-  auto d = path::basename(path::__filename());
+  std::string s = "testwrite.txt";
+  fs::write_file(s, "666");
+  auto d = path::basename(path::__filename() + ".txt");
   try {
     fs::copy_file(s, d);
   } catch (const std::exception& e) {
+    fs::remove(s);
     std::cout << e.what() << std::endl;
     return 0;
   }
@@ -324,6 +326,8 @@ static int test_copy() {
     expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))
+    fs::remove(s);
+    expect(!fs::exists(s))
   }
   return 0;
 }
