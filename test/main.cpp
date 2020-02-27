@@ -314,7 +314,7 @@ static int test_copy() {
     fs::copy_file(s, d);
   } catch (const std::exception& e) {
     fs::remove(s);
-    std::cout << e.what() << std::endl;
+    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
     return 0;
   }
   expect(fs::exists(d))
@@ -322,7 +322,7 @@ static int test_copy() {
     fs::copy_file(s, d, true);
     return -1;
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
     expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))
