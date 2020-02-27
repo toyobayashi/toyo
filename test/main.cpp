@@ -5,6 +5,7 @@
 #include "path.hpp"
 #include "fs.hpp"
 #include "oid.hpp"
+#include "console.hpp"
 
 #include "mocha.h"
 
@@ -136,26 +137,12 @@ static int test_class() {
 static int test_readdir() {
   auto ls = toyo::fs::readdir(path::__dirname() + "/any/..");
   expect(ls.size() > 0)
-  std::cout << "[";
-  for (size_t i = 0; i < ls.size(); i++) {
-    std::cout << "\"" << ls[i] << "\"";
-    if (i != ls.size() - 1) {
-      std::cout << ", ";
-    }
-  }
-  std::cout << "]" << std::endl;
+  console::log(ls);
 
   fs::mkdirs("emptydir");
   auto ls2 = toyo::fs::readdir("emptydir");
   expect(ls2.size() == 0)
-  std::cout << "[";
-  for (size_t i = 0; i < ls2.size(); i++) {
-    std::cout << "\"" << ls2[i] << "\"";
-    if (i != ls2.size() - 1) {
-      std::cout << ", ";
-    }
-  }
-  std::cout << "]" << std::endl;
+  console::log(ls2);
   fs::remove("emptydir");
 
   try {
@@ -164,7 +151,7 @@ static int test_readdir() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    std::cout << e.what() << std::endl;
+    console::log(message);
   }
 
   return 0;
@@ -194,7 +181,7 @@ static int test_stat() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    std::cout << message << std::endl;
+    console::log(message);
   }
 
   try {
@@ -203,7 +190,7 @@ static int test_stat() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    std::cout << message << std::endl;
+    console::log(message);
   }
 
   try {
@@ -212,7 +199,7 @@ static int test_stat() {
     expect(stat.is_directory())
     expect(stat2.is_directory())
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    console::log(e.what());
   }
 
   try {
@@ -221,7 +208,7 @@ static int test_stat() {
     expect(stat.is_file());
     expect(stat2.is_file());
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    console::log(e.what());
   }
 
   try {
@@ -233,14 +220,14 @@ static int test_stat() {
     expect(fs::exists("slk"))
     fs::stats stat = fs::stat("slk");
     fs::stats stat2 = fs::lstat("slk");
-    std::cout << stat.size << std::endl;
-    std::cout << stat.is_symbolic_link() << std::endl;
-    std::cout << stat2.size << std::endl;
-    std::cout << stat2.is_symbolic_link() << std::endl;
+    console::log(stat.size);
+    console::log(stat.is_symbolic_link());
+    console::log(stat2.size);
+    console::log(stat2.is_symbolic_link());
     fs::remove("slk");
     expect(!fs::exists("slk"))
   } catch (const std::exception& e) {
-    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
+    console::log(e.what());
   }
 
   try {
@@ -249,7 +236,7 @@ static int test_stat() {
     fs::remove("slk2");
     expect(!fs::exists("slk2"))
   } catch (const std::exception& e) {
-    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
+    console::log(e.what());
   }
 
   return 0;
@@ -260,7 +247,7 @@ static int test_mkdirs() {
   try {
     fs::mkdirs(mkdir0);
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    console::log(e.what());
     return -1;
   }
 
@@ -270,7 +257,7 @@ static int test_mkdirs() {
     expect(fs::exists(mkdir1));
     fs::remove(mkdir1);
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    console::log(e.what());
     return -1;
   }
 
@@ -281,7 +268,7 @@ static int test_mkdirs() {
     expect(fs::exists(mkdir2));
     fs::remove(root);
   } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+    console::log(e.what());
     return -1;
   }
 
@@ -314,7 +301,7 @@ static int test_copy() {
     fs::copy_file(s, d);
   } catch (const std::exception& e) {
     fs::remove(s);
-    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
+    console::log(e.what());
     return 0;
   }
   expect(fs::exists(d))
@@ -322,7 +309,7 @@ static int test_copy() {
     fs::copy_file(s, d, true);
     return -1;
   } catch (const std::exception& e) {
-    std::cout << toyo::charset::a2ocp(e.what()) << std::endl;
+    console::log(e.what());
     expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))
@@ -337,8 +324,8 @@ static int test_read_write() {
   std::string append = "append";
   try {
     fs::write_file("testwrite.txt", data);
-  } catch (const std::exception& err) {
-    std::cout << err.what() << std::endl;
+  } catch (const std::exception& e) {
+    console::log(e.what());
     return -1;
   }
 
@@ -349,14 +336,16 @@ static int test_read_write() {
 
   fs::mkdirs("testmkdir");
   try {
-    std::cout << fs::read_file_to_string("testmkdir") << std::endl;
+    console::log(fs::read_file_to_string("testmkdir"));
+    // std::cout << fs::read_file_to_string("testmkdir") << std::endl;
     return -1;
   } catch (const std::exception&) {
     fs::remove("testmkdir");
   }
 
   try {
-    std::cout << fs::read_file_to_string("notexists") << std::endl;
+    console::log(fs::read_file_to_string("notexists"));
+    // std::cout << fs::read_file_to_string("notexists") << std::endl;
     return -1;
   } catch (const std::exception& err) {
     expect(std::string(err.what()).find("No such file or directory") != std::string::npos)
@@ -398,9 +387,19 @@ int main() {
   }
 
   int exit_code = fail > 0 ? -1 : 0;
-  std::cout << "cwd: " << toyo::process::cwd() << std::endl;
-  std::cout << "__filename: " << toyo::path::__filename() << std::endl;
-  std::cout << "__dirname: " << toyo::path::__dirname() << std::endl << std::endl;
-  std::cout << "exit: " << exit_code << ", pid: " << toyo::process::pid() << std::endl;
+
+  console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
+  console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
+  console::log("%s __dirname: %s", charset::a2ocp("所在目录").c_str(), toyo::path::__dirname().c_str());
+  console::log(std::string(""));
+  console::log("中文测试");
+  console::log(std::vector<std::string>({"中文测试", "2"}));
+  console::log(std::vector<unsigned char>({0x01, 0x66}));
+  console::log(std::vector<int>({0x01, 0x66}));
+  console::log(-9.666);
+  console::log(-90);
+  console::log(std::string(""));
+  console::log("exit: %d, pid: %d", exit_code, toyo::process::pid());
+  // console::clear();
   return exit_code;
 }
