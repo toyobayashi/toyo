@@ -16,9 +16,12 @@ matrix:
             - g++-7
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - PLATFORM_NAME="linux"
     - os: osx
       osx_image: xcode11.1
       compiler: clang
+      env:
+        - PLATFORM_NAME="darwin"
     - os: windows
 
 before_install:
@@ -27,5 +30,4 @@ before_install:
 script:
   - cmake --version
   - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat; else ./build.sh; fi
-  - osname=$(("$TRAVIS_OS_NAME"=="osx"?"darwin":"linux"))
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/toyotest.exe; else ./build/"$osname"/Release/toyotest; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/toyotest.exe; else ./build/"$PLATFORM_NAME"/Release/toyotest; fi
