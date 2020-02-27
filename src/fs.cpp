@@ -1291,7 +1291,7 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
 #else
 
   if (fail_if_exists && fs::exists(dest)) {
-    throw std::runtime_error("File exists. copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(EEXIST, "copy \"" + s + "\" -> \"" + d + "\"");
   }
 
   FILE* sf = ::fopen(source.c_str(), "rb+");
