@@ -314,7 +314,8 @@ static int test_copy() {
   try {
     fs::copy_file(s, d, true);
     return -1;
-  } catch (const std::exception&) {
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
     expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))

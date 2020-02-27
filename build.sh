@@ -5,7 +5,7 @@ else
 fi
 
 unamestr=`uname`
-os=${unamestr,,}
+os=`echo $unamestr | tr "A-Z" "a-z"`
 
 mkdir -p "./build/$os/$type"
 cd "./build/$os/$type"
