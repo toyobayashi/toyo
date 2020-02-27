@@ -6,6 +6,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 #include "path.hpp"
 #include "charset.hpp"
 #include "process.hpp"
@@ -1165,11 +1169,18 @@ std::string relative(const std::string& f, const std::string& t) {
 }
 
 std::string __filename() {
-#ifdef _WIN32
+#if defined(_WIN32)
   wchar_t buf[MAX_PATH] = { 0 };
   DWORD code = GetModuleFileNameW(nullptr, buf, MAX_PATH);
   if (code == 0) return "";
   return toyo::charset::w2a(buf);
+#elif defined(__APPLE__)
+  char buf[1024] = { 0 };
+  unsigned size = 1023;
+  int code = _NSGetExecutablePath(path, &size);
+  // path[size] = '\0';
+  if (code != 0) return "";
+  return buf;
 #else
   char buf[1024] = { 0 };
   int code = readlink("/proc/self/exe", buf, 1023);
