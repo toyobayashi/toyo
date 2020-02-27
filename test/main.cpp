@@ -309,7 +309,12 @@ static int test_mkdirs() {
 static int test_copy() {
   auto s = path::__filename();
   auto d = path::basename(path::__filename());
-  fs::copy_file(s, d);
+  try {
+    fs::copy_file(s, d);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
+    return 0;
+  }
   expect(fs::exists(d))
   try {
     fs::copy_file(s, d, true);
