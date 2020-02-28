@@ -49,6 +49,9 @@ class string {
   int length() const;
   int byte_length() const;
 
+  char* c_strcp(int) const;
+  char* c_stro() const;
+
   string char_at(int index = 0) const;
   unsigned short char_code_at(int index = 0) const;
   string substring(int) const;

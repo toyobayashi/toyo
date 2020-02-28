@@ -10,7 +10,6 @@
 #include <cstdlib>
 
 #include "process.hpp"
-#include "charset.hpp"
 
 namespace toyo {
 

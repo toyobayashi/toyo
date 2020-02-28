@@ -19,7 +19,6 @@
 
 #include "fs.hpp"
 #include "path.hpp"
-#include "charset.hpp"
 #include "cerror.hpp"
 
 #define TOYO_FS_BUFFER_SIZE 128 * 1024

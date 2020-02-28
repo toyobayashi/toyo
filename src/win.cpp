@@ -2,10 +2,8 @@
 
 #ifdef _WIN32
 
-#include <string>
+#include "string.hpp"
 #include <cstring>
-
-#include "charset.hpp"
 
 int get_last_error(char* message, int* size) {
   int code = GetLastError();
@@ -29,17 +27,17 @@ int get_last_error(char* message, int* size) {
     LocalFree(buf);
     size_t pos = msg.find_last_of(L"\r\n");
     msg = msg.substr(0, pos - 1);
-    std::string utf8str = toyo::charset::w2a(msg);
+    toyo::string tstr = msg.c_str();
 
     if (!message) {
       if (size) {
-        *size = (int)utf8str.length() + 1;
+        *size = tstr.byte_length() + 1;
       }
     } else {
       if (size) {
-        memcpy(message, utf8str.c_str(), *size);
+        memcpy(message, tstr.c_str(), *size);
       } else {
-        strcpy(message, utf8str.c_str());
+        strcpy(message, tstr.c_str());
       }
     }
   }

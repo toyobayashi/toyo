@@ -6,6 +6,7 @@
 #include <regex>
 
 #include "string.hpp"
+#include "win.h"
 
 namespace toyo {
 
@@ -152,6 +153,42 @@ int string::length() const {
 
 int string::byte_length() const {
   return (int)_str.length();
+}
+
+char* string::c_strcp(int code_page) const {
+#ifdef _WIN32
+  int len = WideCharToMultiByte(code_page, 0, _wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+  if (len == -1) {
+    int size = 0;
+    get_last_error(nullptr, &size);
+    char* buf = new char[size];
+    get_last_error(buf, &size);
+    toyo::string res(buf);
+    delete buf;
+    throw std::runtime_error(res.c_str());
+  }
+  char* buf = (char*)malloc(len);
+  memset(buf, 0, len);
+  WideCharToMultiByte(code_page, 0, _wstr.c_str(), -1, buf, len, nullptr, nullptr);
+  return buf;
+#else
+  size_t size = (byte_length() + 1) * sizeof(char);
+  char* buf = (char*)malloc(size);
+  if (!buf) {
+    throw std::runtime_error(strerror(errno));
+  }
+  memset(buf, 0, size);
+  strcpy(buf, _str.c_str());
+  return buf;
+#endif
+}
+
+char* string::c_stro() const {
+#ifdef _WIN32
+  return this->c_strcp(GetConsoleOutputCP());
+#else
+  return this->c_strcp(0);
+#endif
 }
 
 string string::char_at(int index) const {

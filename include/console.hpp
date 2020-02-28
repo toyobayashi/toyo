@@ -13,7 +13,6 @@
 #include <vector>
 #include <iostream>
 #include "string.hpp"
-#include "charset.hpp"
 
 namespace toyo {
 
@@ -31,7 +30,13 @@ private:
   }
 
   static std::string _format(const char* cstr) {
-    return charset::a2ocp(cstr);
+    toyo::string tstr(cstr);
+
+    char* tmp = tstr.c_stro();
+    std::string res(tmp);
+    toyo::free(tmp);
+
+    return res;
   }
 
   static std::string _format(const std::vector<unsigned char>& buf) {
@@ -58,7 +63,13 @@ private:
     }
     oss << "[ ";
     for (size_t i = 0; i < len; i++) {
-      oss << "\"" << charset::a2ocp(arr[i]) << "\"";
+      toyo::string tstr(arr[i].c_str());
+
+      char* tmp = tstr.c_stro();
+      std::string res(tmp);
+      toyo::free(tmp);
+
+      oss << "\"" << res << "\"";
       if (i != len - 1) {
         oss << ", ";
       }
@@ -76,7 +87,10 @@ private:
     }
     oss << "[ ";
     for (size_t i = 0; i < len; i++) {
-      oss << "\"" << charset::a2ocp(arr[i].c_str()) << "\"";
+      char* tmp = arr[i].c_stro();
+      std::string res(tmp);
+      toyo::free(tmp);
+      oss << "\"" << res << "\"";
       if (i != len - 1) {
         oss << ", ";
       }
@@ -105,7 +119,13 @@ private:
   }
 
   static std::string _format(const std::string& str) {
-    return charset::a2ocp(str);
+    toyo::string tstr(str.c_str());
+
+    char* tmp = tstr.c_stro();
+    std::string res(tmp);
+    toyo::free(tmp);
+
+    return res;
   }
 
   static std::string _format(const toyo::string& str) {
@@ -130,7 +150,10 @@ public:
 
   template <typename... Args>
   static void write(const std::string& format, Args... args) {
-    printf(toyo::charset::a2ocp(format).c_str(), args...);
+    toyo::string tstr(format.c_str());
+    char* tmp = tstr.c_stro();
+    printf(tmp, args...);
+    toyo::free(tmp);
   }
 
   template <typename T>
@@ -148,8 +171,8 @@ public:
 
   template <typename... Args>
   static void log(const std::string& format, Args... args) {
-    std::string f = toyo::charset::a2ocp(format) + "\n";
-    printf(f.c_str(), args...);
+    write(format, args...);
+    printf("\n");
   }
 
   template <typename T>

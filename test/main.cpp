@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cstring>
-#include "charset.hpp"
 #include "process.hpp"
 #include "path.hpp"
 #include "fs.hpp"
@@ -389,9 +388,9 @@ int main() {
 
   int exit_code = fail > 0 ? -1 : 0;
 
-  console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
-  console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
-  console::log("%s __dirname: %s", charset::a2ocp("所在目录").c_str(), toyo::path::__dirname().c_str());
+  console::log("%s cwd: %s", toyo::string("当前工作目录").c_str(), toyo::process::cwd().c_str());
+  console::log("%s __filename: %s", toyo::string("可执行文件").c_str(), toyo::path::__filename().c_str());
+  console::log("%s __dirname: %s", toyo::string("所在目录").c_str(), toyo::path::__dirname().c_str());
   console::log(toyo::string(""));
   console::log("中文测试");
   console::log(std::vector<toyo::string>({"中文测试", "2"}));

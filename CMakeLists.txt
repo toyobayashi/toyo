@@ -6,7 +6,6 @@ project(toyo)
 
 set(SOURCE_FILES
   "src/path.cpp"
-  "src/charset.cpp"
   "src/process.cpp"
   "src/string.cpp"
   "src/fs.cpp"
