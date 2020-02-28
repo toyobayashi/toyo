@@ -76,13 +76,19 @@ std::string w2a(const std::wstring& wstr) {
 
 static std::string _w2a(const std::wstring& wstr, int code_page) {
 #ifdef _WIN32
-  int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
+  int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
   if (len == -1) {
-    throw std::exception("Convert failed.");
+    int size = 0;
+    get_last_error(nullptr, &size);
+    char* buf = new char[size];
+    get_last_error(buf, &size);
+    std::string res(buf);
+    delete buf;
+    throw std::exception(res.c_str());
   }
   char* buf = new char[len];
   memset(buf, 0, len * sizeof(char));
-  WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, buf, len, NULL, NULL);
+  WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, buf, len, nullptr, nullptr);
   std::string res(buf);
   delete[] buf;
   return res;
