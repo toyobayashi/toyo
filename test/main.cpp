@@ -388,9 +388,16 @@ int main() {
 
   int exit_code = fail > 0 ? -1 : 0;
 
-  console::log("%s cwd: %s", toyo::string("当前工作目录").c_str(), toyo::process::cwd().c_str());
-  console::log("%s __filename: %s", toyo::string("可执行文件").c_str(), toyo::path::__filename().c_str());
-  console::log("%s __dirname: %s", toyo::string("所在目录").c_str(), toyo::path::__dirname().c_str());
+  char* title1 = toyo::string("当前工作目录").c_stro();
+  char* title2 = toyo::string("可执行文件").c_stro();
+  char* title3 = toyo::string("所在目录").c_stro();
+  console::log("%s cwd: %s", title1, toyo::process::cwd().c_str());
+  console::log("%s __filename: %s", title2, toyo::path::__filename().c_str());
+  console::log("%s __dirname: %s", title3, toyo::path::__dirname().c_str());
+  toyo::free(title1);
+  toyo::free(title2);
+  toyo::free(title3);
+
   console::log(toyo::string(""));
   console::log("中文测试");
   console::log(std::vector<toyo::string>({"中文测试", "2"}));
