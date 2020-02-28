@@ -4,15 +4,7 @@ project(toyo)
 
 # set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES
-  "src/path.cpp"
-  "src/charset.cpp"
-  "src/process.cpp"
-  "src/string.cpp"
-  "src/fs.cpp"
-  "src/cerror.cpp"
-  "src/win.cpp"
-)
+file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 
 add_library(toyo STATIC
   ${SOURCE_FILES}
@@ -38,10 +30,10 @@ target_include_directories(toyo
     ${PROJECT_SOURCE_DIR}/include
 )
 
+file(GLOB_RECURSE TEST_SOURCE_FILES "test/*.c" "test/*.cpp")
+
 add_executable(toyotest
-  "test/main.cpp"
-  "test/mocha.c"
-  "test/oid.c"
+  ${TEST_SOURCE_FILES}
 )
 
 set_target_properties(toyotest PROPERTIES CXX_STANDARD 11)
