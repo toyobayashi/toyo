@@ -18,8 +18,6 @@ namespace toyo {
 
 class console {
 private:
-  console();
-
   static std::string _format(char c) {
     char buf[2] = { c, '\0' };
     return std::string(buf);
@@ -97,6 +95,9 @@ private:
   }
 
 public:
+  console() = delete;
+  console(const console&) = delete;
+
   static void write(const char* arg) {
     std::cout << _format(arg);
   }

@@ -11,7 +11,7 @@
 #endif
 
 #include <utility>
-#include <stdexcept>
+#include <exception>
 #include <cerrno>
 #include <cstring>
 #include <cstdio>
@@ -350,7 +350,7 @@ static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
 
   if (!is_absolute) {
     /* Not supporting relative paths */
-    throw std::runtime_error("Not supporting relative paths.");
+    throw std::exception("Not supporting relative paths.");
   }
 
   /* Do a pessimistic calculation of the required buffer size */
@@ -362,7 +362,7 @@ static void fs_create_junction(const WCHAR* path, const WCHAR* new_path) {
   /* Allocate the buffer */
   buffer = (REPARSE_DATA_BUFFER*)malloc(needed_buf_size);
   if (!buffer) {
-    throw std::runtime_error("Out of memory.");
+    throw std::exception("Out of memory.");
   }
 
   /* Grab a pointer to the part of the buffer where filenames go */
@@ -488,7 +488,7 @@ error:
     RemoveDirectoryW(new_path);
   }
 
-  throw std::runtime_error(get_last_error_message());
+  throw std::exception(get_last_error_message().c_str());
 }
 #endif
 
@@ -988,7 +988,7 @@ void access(const std::string& p, int mode) {
 
   if (attr == INVALID_FILE_ATTRIBUTES) {
     // return false;
-    throw std::runtime_error(get_last_error_message() + " access \"" + p + "\"");
+    throw std::exception((get_last_error_message() + " access \"" + p + "\"").c_str());
   }
 
   /*
@@ -1093,12 +1093,12 @@ void unlink(const std::string& p) {
                        NULL);
 
   if (handle == INVALID_HANDLE_VALUE) {
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 
   if (!GetFileInformationByHandle(handle, &info)) {
     CloseHandle(handle);
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 
   if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -1110,7 +1110,7 @@ void unlink(const std::string& p) {
     if (!(info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
       SetLastError(ERROR_ACCESS_DENIED);
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
 
     /* Read the reparse point and check if it is a valid symlink. If not, don't
@@ -1121,7 +1121,7 @@ void unlink(const std::string& p) {
         error = ERROR_ACCESS_DENIED;
       SetLastError(error);
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
   }
 
@@ -1140,7 +1140,7 @@ void unlink(const std::string& p) {
     if (!NT_SUCCESS(status)) {
       SetLastError(RtlNtStatusToDosError(status));
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
   }
 
@@ -1157,7 +1157,7 @@ void unlink(const std::string& p) {
   } else {
     CloseHandle(handle);
     SetLastError(RtlNtStatusToDosError(status));
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::exception((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 #else
   code = ::unlink(path.c_str());
@@ -1248,7 +1248,7 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
         file_symlink_usermode_flag = 0;
         fs::symlink(o, n, type);
       } else {
-        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+        throw std::exception((get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"").c_str());
       }
     }
   } else if (type == symlink_type_file) {
@@ -1259,14 +1259,14 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
         file_symlink_usermode_flag = 0;
         fs::symlink(o, n, type);
       } else {
-        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+        throw std::exception((get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"").c_str());
       }
     }
   } else if (type == symlink_type_junction) {
     oldpath = path::resolve(oldpath);
     fs_create_junction(toyo::charset::a2w(oldpath).c_str(), toyo::charset::a2w(newpath).c_str());
   } else {
-    throw std::runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");
+    throw std::exception(("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"").c_str());
   }
 #else
   int code = ::symlink(oldpath.c_str(), newpath.c_str());
@@ -1286,7 +1286,7 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
 
 #ifdef _WIN32
   if (!CopyFileW(toyo::charset::a2w(source).c_str(), toyo::charset::a2w(dest).c_str(), fail_if_exists)) {
-    throw std::runtime_error(get_last_error_message() + " copy \"" + s + "\" -> \"" + d + "\"");
+    throw std::exception((get_last_error_message() + " copy \"" + s + "\" -> \"" + d + "\"").c_str());
   }
 #else
 

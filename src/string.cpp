@@ -41,10 +41,6 @@ std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) 
   return res;
 }
 
-std::string substring(const std::string& self, int indexStart, int indexEnd) {
-  return toyo::charset::w2a(wsubstring(toyo::charset::a2w(self), indexStart, indexStart));
-}
-
 std::wstring wslice(const std::wstring& self, int start, int end) {
   int _length = (int)self.length();
   end--;
@@ -67,14 +63,6 @@ std::wstring wslice(const std::wstring& self, int start) {
   return wslice(self, start, (int)self.length());
 }
 
-std::string slice(const std::string& self, int start, int end) {
-  return toyo::charset::w2a(wslice(toyo::charset::a2w(self), start, end));
-}
-
-std::string slice(const std::string& self, int start) {
-  return toyo::charset::w2a(wslice(toyo::charset::a2w(self), start));
-}
-
 std::wstring wto_lower_case(const std::wstring& self) {
   size_t bl = self.length();
   wchar_t* res = new wchar_t[bl + 1];
@@ -89,10 +77,6 @@ std::wstring wto_lower_case(const std::wstring& self) {
   std::wstring ret(res);
   delete[] res;
   return ret;
-}
-
-std::string to_lower_case(const std::string& self) {
-  return toyo::charset::w2a(wto_lower_case(toyo::charset::a2w(self)));
 }
 
 int wlast_index_of(const std::wstring& self, const std::wstring& searchValue, int fromIndex) {
