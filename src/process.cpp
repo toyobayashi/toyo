@@ -16,21 +16,21 @@ namespace toyo {
 
 namespace process {
 
-std::string cwd() {
+toyo::string cwd() {
 #ifdef _WIN32
   wchar_t* buf;
   if ((buf = _wgetcwd(nullptr, 0)) == nullptr) {
     return "";
   }
-  std::wstring res = buf;
+  toyo::string res = buf;
   free(buf);
-  return toyo::charset::w2a(res);
+  return res;
 #else
   char* buf;
   if ((buf = getcwd(nullptr, 0)) == nullptr) {
     return "";
   }
-  std::string res = buf;
+  toyo::string res = buf;
   free(buf);
   return res;
 #endif
@@ -44,7 +44,7 @@ int pid() {
 #endif
 }
 
-std::string platform() {
+toyo::string platform() {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
   return "win32";
 #elif defined(__APPLE__) && (defined(__GNUC__) || defined(__xlC__) || defined(__xlc__))

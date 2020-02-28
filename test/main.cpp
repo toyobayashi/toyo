@@ -66,8 +66,9 @@ static int test_extname() {
 
 static int test_resolve() {
 #ifdef _WIN32
-  expect(path::resolve("/foo/bar", "/tmp/file/").substr(1) == ":\\tmp\\file")
-  expect(path::resolve("/foo/bar", "./baz").substr(1) == ":\\foo\\bar\\baz")
+  console::log(path::resolve("/foo/bar", "/tmp/file/"));
+  expect(path::resolve("/foo/bar", "/tmp/file/").substring(1) == ":\\tmp\\file")
+  expect(path::resolve("/foo/bar", "./baz").substring(1) == ":\\foo\\bar\\baz")
 #else
   expect(path::resolve("/foo/bar", "/tmp/file/") == "/tmp/file")
   expect(path::resolve("/foo/bar", "./baz") == "/foo/bar/baz")
@@ -149,8 +150,8 @@ static int test_readdir() {
     auto ls2 = toyo::fs::readdir("notexists");
     return -1;
   } catch (const std::exception& e) {
-    std::string message = e.what();
-    expect(message.find("No such file or directory") != std::string::npos)
+    toyo::string message = e.what();
+    expect(message.includes("No such file or directory"))
     console::log(message);
   }
 
@@ -179,8 +180,8 @@ static int test_stat() {
     fs::stats stat = fs::stat("noexists");
     return -1;
   } catch (const std::exception& e) {
-    std::string message = e.what();
-    expect(message.find("No such file or directory") != std::string::npos)
+    toyo::string message = e.what();
+    expect(message.includes("No such file or directory"))
     console::log(message);
   }
 
@@ -188,8 +189,8 @@ static int test_stat() {
     fs::stats stat = fs::lstat("noexists");
     return -1;
   } catch (const std::exception& e) {
-    std::string message = e.what();
-    expect(message.find("No such file or directory") != std::string::npos)
+    toyo::string message = e.what();
+    expect(message.includes("No such file or directory"))
     console::log(message);
   }
 
@@ -243,7 +244,7 @@ static int test_stat() {
 }
 
 static int test_mkdirs() {
-  std::string mkdir0 = path::__dirname();
+  toyo::string mkdir0 = path::__dirname();
   try {
     fs::mkdirs(mkdir0);
   } catch (const std::exception& e) {
@@ -251,7 +252,7 @@ static int test_mkdirs() {
     return -1;
   }
 
-  std::string mkdir1 = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
+  toyo::string mkdir1 = toyo::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString().c_str();
   try {
     fs::mkdirs(mkdir1);
     expect(fs::exists(mkdir1));
@@ -261,8 +262,8 @@ static int test_mkdirs() {
     return -1;
   }
 
-  std::string root = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
-  std::string mkdir2 = path::join(root, "subdir/a/b/c");
+  toyo::string root = toyo::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString().c_str();
+  toyo::string mkdir2 = path::join(root, "subdir/a/b/c");
   try {
     fs::mkdirs(mkdir2);
     expect(fs::exists(mkdir2));
@@ -272,29 +273,29 @@ static int test_mkdirs() {
     return -1;
   }
 
-  std::string mkdir3 = path::__filename();
+  toyo::string mkdir3 = path::__filename();
   try {
     fs::mkdirs(mkdir3);
     return -1;
   } catch (const std::exception& e) {
-    std::string msg = e.what();
-    expect(msg.find(strerror(EEXIST)) != std::string::npos)
+    toyo::string msg = e.what();
+    expect(msg.includes(strerror(EEXIST)))
   }
 
-  std::string mkdir4 = path::join(path::__filename(), "fail");
+  toyo::string mkdir4 = path::join(path::__filename(), "fail");
   try {
     fs::mkdirs(mkdir4);
     return -1;
   } catch (const std::exception& e) {
-    std::string msg = e.what();
-    expect(msg.find(strerror(ENOENT)) != std::string::npos)
+    toyo::string msg = e.what();
+    expect(msg.includes(strerror(ENOENT)))
   }
 
   return 0;
 }
 
 static int test_copy() {
-  std::string s = "testwrite.txt";
+  toyo::string s = "testwrite.txt";
   fs::write_file(s, "666");
   auto d = path::basename(path::__filename() + ".txt");
   try {
@@ -320,8 +321,8 @@ static int test_copy() {
 }
 
 static int test_read_write() {
-  std::string data = process::platform() + "测试\r\n";
-  std::string append = "append";
+  toyo::string data = process::platform() + "测试\r\n";
+  toyo::string append = "append";
   try {
     fs::write_file("testwrite.txt", data);
   } catch (const std::exception& e) {
@@ -348,7 +349,7 @@ static int test_read_write() {
     // std::cout << fs::read_file_to_string("notexists") << std::endl;
     return -1;
   } catch (const std::exception& err) {
-    expect(std::string(err.what()).find("No such file or directory") != std::string::npos)
+    expect(toyo::string(err.what()).includes("No such file or directory"))
   }
   return 0;
 }
@@ -391,14 +392,14 @@ int main() {
   console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
   console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
   console::log("%s __dirname: %s", charset::a2ocp("所在目录").c_str(), toyo::path::__dirname().c_str());
-  console::log(std::string(""));
+  console::log(toyo::string(""));
   console::log("中文测试");
-  console::log(std::vector<std::string>({"中文测试", "2"}));
+  console::log(std::vector<toyo::string>({"中文测试", "2"}));
   console::log(std::vector<unsigned char>({0x01, 0x66}));
   console::log(std::vector<int>({0x01, 0x66}));
   console::log(-9.666);
   console::log(-90);
-  console::log(std::string(""));
+  console::log(toyo::string(""));
   console::log("exit: %d, pid: %d", exit_code, toyo::process::pid());
   // console::clear();
   return exit_code;

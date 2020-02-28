@@ -1,7 +1,7 @@
 #ifndef __FS_HPP__
 #define __FS_HPP__
 
-#include <string>
+#include "string.hpp"
 #include <vector>
 
 #include <ctime>
@@ -42,7 +42,7 @@ private:
   bool is_link_;
 public:
   stats();
-  stats(const std::string&, bool follow_link = false);
+  stats(const toyo::string&, bool follow_link = false);
   stats(const char*, bool follow_link = false);
 
   unsigned int dev;
@@ -85,7 +85,7 @@ public:
 
   const struct _wfinddata_t* data();
 
-  std::string name() const;
+  toyo::string name() const;
 
   dirent& operator=(const dirent& d);
   dirent& operator=(dirent&& d);
@@ -102,15 +102,15 @@ public:
 class dir {
 private:
   intptr_t dir_;
-  std::string path_;
+  toyo::string path_;
   struct _wfinddata_t* first_data_;
 public:
   dir(const dir&);
   dir(dir&&);
-  dir(const std::string& p);
+  dir(const toyo::string& p);
   ~dir();
   void close();
-  std::string path() const;
+  toyo::string path() const;
   fs::dirent read();
 
   dir& operator=(const dir& d);
@@ -132,7 +132,7 @@ public:
 
   const struct ::dirent* data();
 
-  std::string name() const;
+  toyo::string name() const;
 
   bool is_file() const;
   bool is_directory() const;
@@ -146,37 +146,37 @@ public:
 class dir {
 private:
   DIR* dir_;
-  std::string path_;
+  toyo::string path_;
 public:
-  dir(const std::string& p);
+  dir(const toyo::string& p);
   ~dir();
   void close();
-  std::string path() const;
+  toyo::string path() const;
   fs::dirent read() const;
 };
 #endif
 
-fs::dir opendir(const std::string&);
-std::vector<std::string> readdir(const std::string&);
-bool access(const std::string&, int mode = 0);
-bool exists(const std::string&);
-stats stat(const std::string&);
-stats lstat(const std::string&);
-void mkdir(const std::string&, int mode = 0777);
-void mkdirs(const std::string&, int mode = 0777);
-void unlink(const std::string&);
-void rmdir(const std::string&);
-void rename(const std::string&, const std::string&);
-void remove(const std::string&);
-void symlink(const std::string&, const std::string&);
-void symlink(const std::string&, const std::string&, symlink_type);
-void copy_file(const std::string&, const std::string&, bool fail_if_exists = false);
-std::vector<unsigned char> read_file(const std::string&);
-std::string read_file_to_string(const std::string&);
-void write_file(const std::string&, const std::vector<unsigned char>&);
-void write_file(const std::string&, const std::string&);
-void append_file(const std::string&, const std::vector<unsigned char>&);
-void append_file(const std::string&, const std::string&);
+fs::dir opendir(const toyo::string&);
+std::vector<toyo::string> readdir(const toyo::string&);
+bool access(const toyo::string&, int mode = 0);
+bool exists(const toyo::string&);
+stats stat(const toyo::string&);
+stats lstat(const toyo::string&);
+void mkdir(const toyo::string&, int mode = 0777);
+void mkdirs(const toyo::string&, int mode = 0777);
+void unlink(const toyo::string&);
+void rmdir(const toyo::string&);
+void rename(const toyo::string&, const toyo::string&);
+void remove(const toyo::string&);
+void symlink(const toyo::string&, const toyo::string&);
+void symlink(const toyo::string&, const toyo::string&, symlink_type);
+void copy_file(const toyo::string&, const toyo::string&, bool fail_if_exists = false);
+std::vector<unsigned char> read_file(const toyo::string&);
+toyo::string read_file_to_string(const toyo::string&);
+void write_file(const toyo::string&, const std::vector<unsigned char>&);
+void write_file(const toyo::string&, const toyo::string&);
+void append_file(const toyo::string&, const std::vector<unsigned char>&);
+void append_file(const toyo::string&, const toyo::string&);
 
 }
 

@@ -12,6 +12,7 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
+#include "string.hpp"
 #include "charset.hpp"
 
 namespace toyo {
@@ -66,6 +67,24 @@ private:
     return oss.str();
   }
 
+  static std::string _format(const std::vector<toyo::string>& arr) {
+    size_t len = arr.size();
+    std::ostringstream oss;
+    if (len == 0) {
+      oss << "[]";
+      return oss.str();
+    }
+    oss << "[ ";
+    for (size_t i = 0; i < len; i++) {
+      oss << "\"" << charset::a2ocp(arr[i].c_str()) << "\"";
+      if (i != len - 1) {
+        oss << ", ";
+      }
+    }
+    oss << " ]";
+    return oss.str();
+  }
+
   template <typename T>
   static std::string _format(const std::vector<T>& arr) {
     size_t len = arr.size();
@@ -87,6 +106,10 @@ private:
 
   static std::string _format(const std::string& str) {
     return charset::a2ocp(str);
+  }
+
+  static std::string _format(const toyo::string& str) {
+    return str.c_str();
   }
 
   template <typename T>

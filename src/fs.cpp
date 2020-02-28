@@ -152,12 +152,12 @@ RtlNtStatusToDosError(NTSTATUS Status);
 # define NT_SUCCESS(status) (((NTSTATUS) (status)) >= 0)
 #endif
 
-static std::string get_last_error_message() {
+static toyo::string get_last_error_message() {
   int size = 0;
   get_last_error(nullptr, &size);
   char* buf = new char[size];
   get_last_error(buf, &size);
-  std::string res(buf);
+  toyo::string res(buf);
   delete buf;
   return res;
 }
@@ -488,7 +488,7 @@ error:
     RemoveDirectoryW(new_path);
   }
 
-  throw std::runtime_error(get_last_error_message());
+  throw std::runtime_error(get_last_error_message().c_str());
 }
 #endif
 
@@ -521,9 +521,9 @@ bool dirent::is_empty() const { return dirent_ == nullptr; }
 
 const struct _wfinddata_t* dirent::data() { return dirent_; }
 
-std::string dirent::name() const {
+toyo::string dirent::name() const {
   if (dirent_) {
-    return toyo::charset::w2a(dirent_->name);
+    return (dirent_->name);
   } else {
     return "";
   }
@@ -640,14 +640,14 @@ dir& dir::operator=(dir&& d) {
   return *this;
 }
 
-dir::dir(const std::string& p): dir_(-1), path_(p), first_data_(nullptr) {
-  std::string path = toyo::path::normalize(p);
-  std::wstring wpath = toyo::charset::a2w(path);
+dir::dir(const toyo::string& p): dir_(-1), path_(p), first_data_(nullptr) {
+  toyo::string path = toyo::path::normalize(p);
+  std::wstring wpath = path.c_strw();
   first_data_ = new struct _wfinddata_t;
-  dir_ = _wfindfirst(toyo::charset::a2w(path::win32::join(path, "*")).c_str(), first_data_);
+  dir_ = _wfindfirst(path::win32::join(path, "*").c_strw(), first_data_);
   if (dir_ == -1) {
     delete first_data_;
-    throw cerror(errno, std::string("opendir \"") + p + "\"");
+    throw cerror(errno, toyo::string("opendir \"") + p + "\"");
   }
 }
 dir::~dir() {
@@ -661,7 +661,7 @@ dir::~dir() {
   }
 }
 
-std::string dir::path() const { return path_; }
+toyo::string dir::path() const { return path_; }
 
 void dir::close() {
   if (first_data_) {
@@ -670,7 +670,7 @@ void dir::close() {
   }
   if (dir_ != -1) {
     if (0 != _findclose(dir_)) {
-      throw cerror(errno, std::string("closedir \"") + path_ + "\""); 
+      throw cerror(errno, toyo::string("closedir \"") + path_ + "\""); 
     };
     dir_ = -1;
   }
@@ -702,7 +702,7 @@ bool dirent::is_empty() const { return dirent_ == nullptr; }
 
 const struct ::dirent* dirent::data() { return dirent_; }
 
-std::string dirent::name() const {
+toyo::string dirent::name() const {
   if (dirent_) {
     return dirent_->d_name;
   } else {
@@ -760,10 +760,10 @@ bool dirent::is_socket() const {
   }
 }
 
-dir::dir(const std::string& p): dir_(nullptr), path_(p) {
-  std::string path = toyo::path::normalize(p);
+dir::dir(const toyo::string& p): dir_(nullptr), path_(p) {
+  toyo::string path = toyo::path::normalize(p);
   if ((dir_ = ::opendir(path.c_str())) == nullptr) {
-    throw cerror(errno, std::string("opendir \"") + p + "\"");
+    throw cerror(errno, toyo::string("opendir \"") + p + "\"");
   }
 }
 dir::~dir() {
@@ -773,12 +773,12 @@ dir::~dir() {
   }
 }
 
-std::string dir::path() const { return path_; }
+toyo::string dir::path() const { return path_; }
 
 void dir::close() {
   if (dir_) {
     if (0 != closedir(dir_)) {
-      throw cerror(errno, std::string("closedir \"") + path_ + "\""); 
+      throw cerror(errno, toyo::string("closedir \"") + path_ + "\""); 
     }
     dir_ = nullptr;
   }
@@ -791,7 +791,7 @@ fs::dirent dir::read() const {
 
 #endif
 
-fs::dir opendir(const std::string& p) {
+fs::dir opendir(const toyo::string& p) {
   return fs::dir(p);
 }
 
@@ -809,19 +809,19 @@ stats::stats():
   mtime(0),
   ctime(0) {}
 
-stats::stats(const char* path, bool follow_link): stats(std::string(path), follow_link) {}
+stats::stats(const char* path, bool follow_link): stats(toyo::string(path), follow_link) {}
 
-stats::stats(const std::string& p, bool follow_link) {
-  std::string path = path::normalize(p);
+stats::stats(const toyo::string& p, bool follow_link) {
+  toyo::string path = path::normalize(p);
 #ifdef _WIN32
   int code = 0;
   struct _stat info;
-  std::wstring wpath = toyo::charset::a2w(path);
+  std::wstring wpath = path.c_strw();
 
   if (follow_link) { // stat
     code = _wstat(wpath.c_str(), &info);
     if (code != 0) {
-      throw cerror(errno, std::string("stat") + " \"" + p + "\"");
+      throw cerror(errno, toyo::string("stat") + " \"" + p + "\"");
     }
     this->is_link_ = false;
     this->dev = info.st_dev;
@@ -840,7 +840,7 @@ stats::stats(const std::string& p, bool follow_link) {
 
   DWORD attrs = GetFileAttributesW(wpath.c_str());
   if (attrs == INVALID_FILE_ATTRIBUTES) {
-    throw cerror(ENOENT, std::string("lstat") + " \"" + p + "\"");
+    throw cerror(ENOENT, toyo::string("lstat") + " \"" + p + "\"");
     // win32_throw_stat_error(p, "lstat");
     return;
   }
@@ -861,7 +861,7 @@ stats::stats(const std::string& p, bool follow_link) {
   } else {
     code = _wstat(wpath.c_str(), &info);
     if (code != 0) {
-      throw cerror(errno, std::string("lstat") + " \"" + p + "\"");
+      throw cerror(errno, toyo::string("lstat") + " \"" + p + "\"");
     }
     this->is_link_ = false;
     this->dev = info.st_dev;
@@ -882,12 +882,12 @@ stats::stats(const std::string& p, bool follow_link) {
   if (follow_link) {
     code = ::stat(path.c_str(), &info);
     if (code != 0) {
-      throw cerror(errno, std::string("stat \"") + p + "\"");
+      throw cerror(errno, toyo::string("stat \"") + p + "\"");
     }
   } else {
     code = ::lstat(path.c_str(), &info);
     if (code != 0) {
-      throw cerror(errno, std::string("lstat \"") + p + "\"");
+      throw cerror(errno, toyo::string("lstat \"") + p + "\"");
     }
   }
 
@@ -959,12 +959,12 @@ bool stats::is_socket() const {
 #endif
 }
 
-std::vector<std::string> readdir(const std::string& p) {
-  std::string newPath = toyo::path::normalize(p);
+std::vector<toyo::string> readdir(const toyo::string& p) {
+  toyo::string newPath = toyo::path::normalize(p);
   fs::dir dir = fs::opendir(newPath);
 
-  std::vector<std::string> res;
-  std::string item;
+  std::vector<toyo::string> res;
+  toyo::string item;
 
   fs::dirent dirent;
 
@@ -979,10 +979,10 @@ std::vector<std::string> readdir(const std::string& p) {
   return res;
 }
 
-bool access(const std::string& p, int mode) {
-  std::string npath = path::normalize(p);
+bool access(const toyo::string& p, int mode) {
+  toyo::string npath = path::normalize(p);
 #ifdef _WIN32
-  std::wstring path = toyo::charset::a2w(npath);
+  std::wstring path = (npath).c_strw();
   // return (_waccess(path.c_str(), mode) == 0);
 
   DWORD attr = GetFileAttributesW(path.c_str());
@@ -1012,7 +1012,7 @@ bool access(const std::string& p, int mode) {
 #endif
 }
 
-bool exists(const std::string& p) {
+bool exists(const toyo::string& p) {
   // return fs::access(p, f_ok);
   bool baccess = fs::access(p, f_ok);
   if (baccess) {
@@ -1027,37 +1027,37 @@ bool exists(const std::string& p) {
   }
 }
 
-stats stat(const std::string& p) {
+stats stat(const toyo::string& p) {
   return stats(p, true);
 }
 
-stats lstat(const std::string& p) {
+stats lstat(const toyo::string& p) {
   return stats(p, false);
 }
 
-void mkdir(const std::string& p, int mode) {
+void mkdir(const toyo::string& p, int mode) {
   int code = 0;
-  std::string path = path::normalize(p);
+  toyo::string path = path::normalize(p);
 #ifdef _WIN32
-  code = _wmkdir(toyo::charset::a2w(path).c_str());
+  code = _wmkdir((path).c_strw());
 #else
   code = ::mkdir(path.c_str(), mode);
 #endif
   if (code != 0) {
-    throw cerror(errno, "mkdir \"" + p + "\"");
+    throw cerror(errno, toyo::string("mkdir \"") + p + "\"");
   }
 }
 
-void mkdirs(const std::string& p, int mode) {
+void mkdirs(const toyo::string& p, int mode) {
   if (fs::exists(p)) {
     if (fs::lstat(p).is_directory()) {
       return;
     } else {
-      throw cerror(EEXIST, "mkdir \"" + p + "\"");
+      throw cerror(EEXIST, toyo::string("mkdir \"") + p + "\"");
     }
   }
 
-  std::string dir = path::dirname(p);
+  toyo::string dir = path::dirname(p);
 
   if (!fs::exists(dir)) {
     fs::mkdirs(dir);
@@ -1066,17 +1066,17 @@ void mkdirs(const std::string& p, int mode) {
   if (fs::lstat(dir).is_directory()) {
     fs::mkdir(p, mode);
   } else {
-    throw cerror(ENOENT, "mkdir \"" + p + "\"");
+    throw cerror(ENOENT, toyo::string("mkdir \"") + p + "\"");
   }
 }
 
-void unlink(const std::string& p) {
+void unlink(const toyo::string& p) {
   int code = 0;
-  std::string path = path::normalize(p);
+  toyo::string path = path::normalize(p);
 #ifdef _WIN32
-  // code = _wunlink(toyo::charset::a2w(path).c_str());
+  // code = _wunlink((path).c_str());
 
-  std::wstring pathws = toyo::charset::a2w(path);
+  std::wstring pathws = (path).c_strw();
   const WCHAR* pathw = pathws.c_str();
   HANDLE handle;
   BY_HANDLE_FILE_INFORMATION info;
@@ -1093,12 +1093,12 @@ void unlink(const std::string& p) {
                        NULL);
 
   if (handle == INVALID_HANDLE_VALUE) {
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 
   if (!GetFileInformationByHandle(handle, &info)) {
     CloseHandle(handle);
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 
   if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -1110,7 +1110,7 @@ void unlink(const std::string& p) {
     if (!(info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
       SetLastError(ERROR_ACCESS_DENIED);
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
 
     /* Read the reparse point and check if it is a valid symlink. If not, don't
@@ -1121,7 +1121,7 @@ void unlink(const std::string& p) {
         error = ERROR_ACCESS_DENIED;
       SetLastError(error);
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
   }
 
@@ -1140,7 +1140,7 @@ void unlink(const std::string& p) {
     if (!NT_SUCCESS(status)) {
       SetLastError(RtlNtStatusToDosError(status));
       CloseHandle(handle);
-      throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+      throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
     }
   }
 
@@ -1157,54 +1157,54 @@ void unlink(const std::string& p) {
   } else {
     CloseHandle(handle);
     SetLastError(RtlNtStatusToDosError(status));
-    throw std::runtime_error(get_last_error_message() + " unlink \"" + p + "\"");
+    throw std::runtime_error((get_last_error_message() + " unlink \"" + p + "\"").c_str());
   }
 #else
   code = ::unlink(path.c_str());
 #endif
   if (code != 0) {
-    throw cerror(errno, "unlink \"" + p + "\"");
+    throw cerror(errno, toyo::string("unlink \"") + p + "\"");
   }
 }
 
-void rmdir(const std::string& p) {
+void rmdir(const toyo::string& p) {
   int code = 0;
-  std::string path = path::normalize(p);
+  toyo::string path = path::normalize(p);
 #ifdef _WIN32
-  code = _wrmdir(toyo::charset::a2w(path).c_str());
+  code = _wrmdir((path).c_strw());
 #else
   code = ::rmdir(path.c_str());
 #endif
   if (code != 0) {
-    throw cerror(errno, "rmdir \"" + p + "\"");
+    throw cerror(errno, toyo::string("rmdir \"") + p + "\"");
   }
 }
 
-void rename(const std::string& s, const std::string& d) {
+void rename(const toyo::string& s, const toyo::string& d) {
   int code = 0;
-  std::string source = path::normalize(s);
-  std::string dest = path::normalize(d);
+  toyo::string source = path::normalize(s);
+  toyo::string dest = path::normalize(d);
 #ifdef _WIN32
-  code = _wrename(toyo::charset::a2w(source).c_str(), toyo::charset::a2w(dest).c_str());
+  code = _wrename((source).c_strw(), (dest).c_strw());
 #else
   code = ::rename(source.c_str(), dest.c_str());
 #endif
   if (code != 0) {
-    throw cerror(errno, "rename \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(errno, toyo::string("rename \"") + s + "\" -> \"" + d + "\"");
   }
 }
 
-void remove(const std::string& p) {
+void remove(const toyo::string& p) {
   if (!fs::exists(p)) {
     return;
   }
 
   fs::stats stat = fs::lstat(p);
   if (stat.is_directory()) {
-    std::vector<std::string> items = fs::readdir(p);
+    std::vector<toyo::string> items = fs::readdir(p);
     if (items.size() != 0) {
       for (size_t i = 0; i < items.size(); i++) {
-        const std::string& item = items[i];
+        const toyo::string& item = items[i];
         fs::remove(path::join(p, item));
       }
       fs::rmdir(p);
@@ -1216,9 +1216,9 @@ void remove(const std::string& p) {
   }
 }
 
-void symlink(const std::string& o, const std::string& n) {
-  std::string oldpath = path::normalize(o);
-  std::string newpath = path::normalize(n);
+void symlink(const toyo::string& o, const toyo::string& n) {
+  toyo::string oldpath = path::normalize(o);
+  toyo::string newpath = path::normalize(n);
 #ifdef _WIN32
   if (!fs::exists(oldpath)) {
     fs::symlink(o, n, symlink_type_file);
@@ -1230,78 +1230,78 @@ void symlink(const std::string& o, const std::string& n) {
 #else
   int code = ::symlink(oldpath.c_str(), newpath.c_str());
   if (code != 0) {
-    throw cerror(errno, "symlink \"" + o + "\" -> \"" + n + "\"");
+    throw cerror(errno, toyo::string("symlink \"") + o + "\" -> \"" + n + "\"");
   }
 #endif
 }
 
-void symlink(const std::string& o, const std::string& n, symlink_type type) {
-  std::string oldpath = path::normalize(o);
-  std::string newpath = path::normalize(n);
+void symlink(const toyo::string& o, const toyo::string& n, symlink_type type) {
+  toyo::string oldpath = path::normalize(o);
+  toyo::string newpath = path::normalize(n);
 #ifdef _WIN32
   int flags = 0;
   if (type == symlink_type_directory) {
     flags = file_symlink_usermode_flag | SYMBOLIC_LINK_FLAG_DIRECTORY;
-    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), flags)) {
+    if (!CreateSymbolicLinkW((newpath).c_strw(), (oldpath).c_strw(), flags)) {
       int err = GetLastError();
       if (err == ERROR_INVALID_PARAMETER && (flags & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))  {
         file_symlink_usermode_flag = 0;
         fs::symlink(o, n, type);
       } else {
-        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+        throw std::runtime_error((get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"").c_str());
       }
     }
   } else if (type == symlink_type_file) {
     flags = file_symlink_usermode_flag;
-    if (!CreateSymbolicLinkW(toyo::charset::a2w(newpath).c_str(), toyo::charset::a2w(oldpath).c_str(), flags)) {
+    if (!CreateSymbolicLinkW((newpath).c_strw(), (oldpath).c_strw(), flags)) {
       int err = GetLastError();
       if (err == ERROR_INVALID_PARAMETER && (flags & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))  {
         file_symlink_usermode_flag = 0;
         fs::symlink(o, n, type);
       } else {
-        throw std::runtime_error(get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"");
+        throw std::runtime_error((get_last_error_message() + " symlink \"" + o + "\" -> \"" + n + "\"").c_str());
       }
     }
   } else if (type == symlink_type_junction) {
     oldpath = path::resolve(oldpath);
-    fs_create_junction(toyo::charset::a2w(oldpath).c_str(), toyo::charset::a2w(newpath).c_str());
+    fs_create_junction((oldpath).c_strw(), (newpath).c_strw());
   } else {
-    throw std::runtime_error("Error symlink_type, symlink \"" + o + "\" -> \"" + n + "\"");
+    throw std::runtime_error((toyo::string("Error symlink_type, symlink \"") + o + "\" -> \"" + n + "\"").c_str());
   }
 #else
   int code = ::symlink(oldpath.c_str(), newpath.c_str());
   if (code != 0) {
-    throw cerror(errno, "symlink \"" + o + "\" -> \"" + n + "\"");
+    throw cerror(errno, toyo::string("symlink \"") + o + "\" -> \"" + n + "\"");
   }
 #endif
 }
 
-void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) {
-  std::string source = path::resolve(s);
-  std::string dest = path::resolve(d);
+void copy_file(const toyo::string& s, const toyo::string& d, bool fail_if_exists) {
+  toyo::string source = path::resolve(s);
+  toyo::string dest = path::resolve(d);
 
   if (source == dest) {
     return;
   }
 
 #ifdef _WIN32
-  if (!CopyFileW(toyo::charset::a2w(source).c_str(), toyo::charset::a2w(dest).c_str(), fail_if_exists)) {
-    throw std::runtime_error(get_last_error_message() + " copy \"" + s + "\" -> \"" + d + "\"");
+  if (!CopyFileW((source).c_strw(), (dest).c_strw(), fail_if_exists)) {
+    throw std::runtime_error((get_last_error_message() + " copy \"" + s + "\" -> \"" + d + "\"").c_str());
   }
 #else
 
   if (fail_if_exists && fs::exists(dest)) {
-    throw cerror(EEXIST, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(EEXIST, toyo::string("copy \"") + s + "\" -> \"" + d + "\"");
   }
 
   FILE* sf = ::fopen(source.c_str(), "rb+");
   if (!sf) {
-    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(errno, toyo::string("copy \"") + s + "\" -> \"" + d + "\"");
   }
   FILE* df = ::fopen(dest.c_str(), "wb+");
   if (!df) {
     ::fclose(sf);
-    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(errno, toyo::string("copy \"") + s + "\" -> \"" + d + "\"");
   }
   unsigned char buf[TOYO_FS_BUFFER_SIZE];
   size_t read;
@@ -1315,8 +1315,8 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
 
 }
 
-std::vector<unsigned char> read_file(const std::string& p) {
-  std::string path = path::normalize(p);
+std::vector<unsigned char> read_file(const toyo::string& p) {
+  toyo::string path = path::normalize(p);
   // if (!fs::exists(path)) {
   //   throw cerror(ENOENT, "open \"" + p + "\"");
   // }
@@ -1330,21 +1330,21 @@ std::vector<unsigned char> read_file(const std::string& p) {
   try {
     stat = fs::lstat(path);
   } catch (const std::exception&) {
-    throw cerror(errno, "open \"" + p + "\"");
+    throw cerror(errno, toyo::string("open \"") + p + "\"");
   }
   if (stat.is_directory()) {
-    throw cerror(EISDIR, "read \"" + p + "\"");
+    throw cerror(EISDIR, toyo::string("read \"") + p + "\"");
   }
 
   long size = stat.size;
 
 #ifdef _WIN32
-  FILE* fp = ::_wfopen(toyo::charset::a2w(path).c_str(), L"rb");
+  FILE* fp = ::_wfopen((path).c_strw(), L"rb");
 #else
   FILE* fp = ::fopen(path.c_str(), "rb");
 #endif
   if (!fp) {
-    throw cerror(errno, "open \"" + p + "\"");
+    throw cerror(errno, toyo::string("open \"") + p + "\"");
   }
 
   unsigned char* buf = new unsigned char[size];
@@ -1353,35 +1353,35 @@ std::vector<unsigned char> read_file(const std::string& p) {
   ::fclose(fp);
   if (read != size) {
     delete[] buf;
-    throw cerror(errno, "read \"" + p + "\"");
+    throw cerror(errno, toyo::string("read \"") + p + "\"");
   }
   std::vector<unsigned char> res(buf, buf + size);
   delete[] buf;
   return res;
 }
 
-std::string read_file_to_string(const std::string& p) {
+toyo::string read_file_to_string(const toyo::string& p) {
   std::vector<unsigned char> buf = fs::read_file(p);
-  return std::string(buf.begin(), buf.end());
+  return toyo::string(std::string(buf.begin(), buf.end()).c_str());
 }
 
-static void _write_file(const std::string& p, const std::vector<unsigned char>& buf, std::string mode) {
+static void _write_file(const toyo::string& p, const std::vector<unsigned char>& buf, toyo::string mode) {
   if (fs::exists(p)) {
     if (fs::lstat(p).is_directory()) {
-      throw cerror(EISDIR, "open \"" + p + "\"");
+      throw cerror(EISDIR, toyo::string("open \"") + p + "\"");
     }
   }
 
-  std::string path = path::normalize(p);
+  toyo::string path = path::normalize(p);
 
 #ifdef _WIN32
-  FILE* fp = ::_wfopen(toyo::charset::a2w(path).c_str(), toyo::charset::a2w(mode).c_str());
+  FILE* fp = ::_wfopen((path).c_strw(), (mode).c_strw());
 #else
   FILE* fp = ::fopen(path.c_str(), mode.c_str());
 #endif
 
   if (!fp) {
-    throw cerror(errno, "open \"" + p + "\"");
+    throw cerror(errno, toyo::string("open \"") + p + "\"");
   }
 
   ::fwrite(buf.data(), sizeof(unsigned char), buf.size(), fp);
@@ -1389,21 +1389,23 @@ static void _write_file(const std::string& p, const std::vector<unsigned char>& 
   ::fclose(fp);
 }
 
-void write_file(const std::string& p, const std::vector<unsigned char>& buf) {
+void write_file(const toyo::string& p, const std::vector<unsigned char>& buf) {
   _write_file(p, buf, "wb");
 }
 
-void write_file(const std::string& p, const std::string& str) {
-  std::vector<unsigned char> buf(str.begin(), str.end());
+void write_file(const toyo::string& p, const toyo::string& str) {
+  std::string s = str.c_str();
+  std::vector<unsigned char> buf(s.begin(), s.end());
   fs::write_file(p, buf);
 }
 
-void append_file(const std::string& p, const std::vector<unsigned char>& buf) {
+void append_file(const toyo::string& p, const std::vector<unsigned char>& buf) {
   _write_file(p, buf, "ab");
 }
 
-void append_file(const std::string& p, const std::string& str) {
-  std::vector<unsigned char> buf(str.begin(), str.end());
+void append_file(const toyo::string& p, const toyo::string& str) {
+  std::string s = str.c_str();
+  std::vector<unsigned char> buf(s.begin(), s.end());
   fs::append_file(p, buf);
 }
 

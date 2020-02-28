@@ -1,7 +1,7 @@
 #ifndef __PATH_HPP__
 #define __PATH_HPP__
 
-#include <string>
+#include "string.hpp"
 
 namespace toyo {
 
@@ -9,118 +9,118 @@ namespace path {
 
 class path {
 private:
-  std::string dir_;
-  std::string root_;
-  std::string base_;
-  std::string name_;
-  std::string ext_;
+  toyo::string dir_;
+  toyo::string root_;
+  toyo::string base_;
+  toyo::string name_;
+  toyo::string ext_;
 
-  std::string _format(const std::string& sep) const;
+  toyo::string _format(const toyo::string& sep) const;
 
-  path(const std::string&, bool);
+  path(const toyo::string&, bool);
 public:
-  static path parse_win32(const std::string&);
-  static path parse_posix(const std::string&);
-  static path parse(const std::string&);
+  static path parse_win32(const toyo::string&);
+  static path parse_posix(const toyo::string&);
+  static path parse(const toyo::string&);
 
   path();
-  path(const std::string&);
+  path(const toyo::string&);
   path(const char*);
 
-  std::string dir() const;
-  std::string root() const;
-  std::string base() const;
-  std::string name() const;
-  std::string ext() const;
+  toyo::string dir() const;
+  toyo::string root() const;
+  toyo::string base() const;
+  toyo::string name() const;
+  toyo::string ext() const;
 
-  path& dir(const std::string&);
-  path& root(const std::string&);
-  path& base(const std::string&);
-  path& name(const std::string&);
-  path& ext(const std::string&);
+  path& dir(const toyo::string&);
+  path& root(const toyo::string&);
+  path& base(const toyo::string&);
+  path& name(const toyo::string&);
+  path& ext(const toyo::string&);
 
   path operator+(const path& p) const;
   path& operator+=(const path& p);
   bool operator==(const path& other);
-  std::string format_win32() const;
-  std::string format_posix() const;
-  std::string format() const;
+  toyo::string format_win32() const;
+  toyo::string format_posix() const;
+  toyo::string format() const;
 };
 
 namespace win32 {
-  const std::string sep = "\\";
-  const std::string delimiter = ";";
+  const toyo::string sep = "\\";
+  const toyo::string delimiter = ";";
 
-  std::string normalize(const std::string&);
+  toyo::string normalize(const toyo::string&);
 
-  std::string resolve(const std::string& arg = "", const std::string& arg1 = "");
+  toyo::string resolve(const toyo::string& arg = "", const toyo::string& arg1 = "");
 
   template <typename... Args>
-  inline std::string resolve(const std::string& arg1, const std::string& arg2, Args... args) {
-    std::string tmp = win32::resolve(arg1, arg2);
+  inline toyo::string resolve(const toyo::string& arg1, const toyo::string& arg2, Args... args) {
+    toyo::string tmp = win32::resolve(arg1, arg2);
     return win32::resolve(tmp, args...);
   }
 
-  std::string join(const std::string&, const std::string& arg2 = "");
+  toyo::string join(const toyo::string&, const toyo::string& arg2 = "");
 
   template <typename... Args>
-  inline std::string join(const std::string& arg1, const std::string& arg2, Args... args) {
-    std::string tmp = win32::join(arg1, arg2);
+  inline toyo::string join(const toyo::string& arg1, const toyo::string& arg2, Args... args) {
+    toyo::string tmp = win32::join(arg1, arg2);
     return win32::join(tmp, args...);
   }
 
-  bool is_absolute(const std::string&);
-  std::string dirname(const std::string&);
-  std::string to_namespaced_path(const std::string&);
-  std::string basename(const std::string&);
-  std::string basename(const std::string&, const std::string&);
-  std::string extname(const std::string&);
-  std::string relative(const std::string&, const std::string&);
+  bool is_absolute(const toyo::string&);
+  toyo::string dirname(const toyo::string&);
+  toyo::string to_namespaced_path(const toyo::string&);
+  toyo::string basename(const toyo::string&);
+  toyo::string basename(const toyo::string&, const toyo::string&);
+  toyo::string extname(const toyo::string&);
+  toyo::string relative(const toyo::string&, const toyo::string&);
 } // win32
 
 namespace posix {
-  const std::string sep = "/";
-  const std::string delimiter = ":";
+  const toyo::string sep = "/";
+  const toyo::string delimiter = ":";
 
-  std::string normalize(const std::string&);
+  toyo::string normalize(const toyo::string&);
 
-  std::string resolve(const std::string& arg = "", const std::string& arg1 = "");
+  toyo::string resolve(const toyo::string& arg = "", const toyo::string& arg1 = "");
 
   template <typename... Args>
-  inline std::string resolve(const std::string& arg1, const std::string& arg2, Args... args) {
-    std::string tmp = posix::resolve(arg1, arg2);
+  inline toyo::string resolve(const toyo::string& arg1, const toyo::string& arg2, Args... args) {
+    toyo::string tmp = posix::resolve(arg1, arg2);
     return posix::resolve(tmp, args...);
   }
 
-  std::string join(const std::string&, const std::string& arg2 = "");
+  toyo::string join(const toyo::string&, const toyo::string& arg2 = "");
 
   template <typename... Args>
-  inline std::string join(const std::string& arg1, const std::string& arg2, Args... args) {
-    std::string tmp = posix::join(arg1, arg2);
+  inline toyo::string join(const toyo::string& arg1, const toyo::string& arg2, Args... args) {
+    toyo::string tmp = posix::join(arg1, arg2);
     return posix::join(tmp, args...);
   }
 
-  bool is_absolute(const std::string&);
-  std::string dirname(const std::string&);
-  std::string to_namespaced_path(const std::string&);
-  std::string basename(const std::string&);
-  std::string basename(const std::string&, const std::string&);
-  std::string extname(const std::string&);
-  std::string relative(const std::string&, const std::string&);
+  bool is_absolute(const toyo::string&);
+  toyo::string dirname(const toyo::string&);
+  toyo::string to_namespaced_path(const toyo::string&);
+  toyo::string basename(const toyo::string&);
+  toyo::string basename(const toyo::string&, const toyo::string&);
+  toyo::string extname(const toyo::string&);
+  toyo::string relative(const toyo::string&, const toyo::string&);
 } // posix
 
 #ifdef _WIN32
-  const std::string sep = win32::sep;
-  const std::string delimiter = win32::delimiter;
+  const toyo::string sep = win32::sep;
+  const toyo::string delimiter = win32::delimiter;
 #else
-  const std::string sep = posix::sep;
-  const std::string delimiter = posix::delimiter;
+  const toyo::string sep = posix::sep;
+  const toyo::string delimiter = posix::delimiter;
 #endif
 
-std::string normalize(const std::string&);
+toyo::string normalize(const toyo::string&);
 
 template <typename... Args>
-inline std::string resolve(Args... args) {
+inline toyo::string resolve(Args... args) {
 #ifdef _WIN32
   return win32::resolve(args...);
 #else
@@ -129,7 +129,7 @@ inline std::string resolve(Args... args) {
 }
 
 template <typename... Args>
-inline std::string join(Args... args) {
+inline toyo::string join(Args... args) {
 #ifdef _WIN32
   return win32::join(args...);
 #else
@@ -137,18 +137,18 @@ inline std::string join(Args... args) {
 #endif
 }
 
-bool is_absolute(const std::string&);
-std::string dirname(const std::string&);
-std::string to_namespaced_path(const std::string&);
+bool is_absolute(const toyo::string&);
+toyo::string dirname(const toyo::string&);
+toyo::string to_namespaced_path(const toyo::string&);
 
-std::string basename(const std::string&);
-std::string basename(const std::string&, const std::string&);
+toyo::string basename(const toyo::string&);
+toyo::string basename(const toyo::string&, const toyo::string&);
 
-std::string extname(const std::string&);
-std::string relative(const std::string&, const std::string&);
+toyo::string extname(const toyo::string&);
+toyo::string relative(const toyo::string&, const toyo::string&);
 
-std::string __filename();
-std::string __dirname();
+toyo::string __filename();
+toyo::string __dirname();
 
 } // path
 

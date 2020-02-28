@@ -1,17 +1,190 @@
 #include <cstddef>
 #include <cstring>
+#include <cstdlib>
+#include <clocale>
+#include <stdexcept>
+#include <regex>
 
-#include "charset.hpp"
 #include "string.hpp"
 
 namespace toyo {
 
-namespace string {
+void free(void* block) {
+  ::free(block);
+}
 
-std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) {
-  int l = (int)self.length();
+void* malloc(size_t size) {
+  return ::malloc(size);
+}
+
+wchar_t* string::utf82w(const char* utf8) {
+  std::string target_locale = "en_US.utf8";
+  const char* c_locale = std::setlocale(LC_CTYPE, nullptr);
+  std::string locale(c_locale ? c_locale : "");
+
+  if (locale != target_locale) {
+    std::setlocale(LC_CTYPE, target_locale.c_str());
+  }
+
+  size_t len = std::mbstowcs(nullptr, utf8, 0);
+  wchar_t* buf = (wchar_t*)malloc((len + 1) * sizeof(wchar_t));
+  if (!buf) {
+    if (locale != "") {
+      std::setlocale(LC_CTYPE, locale.c_str());
+    }
+    throw std::runtime_error(strerror(errno));
+  }
+  memset(buf, 0, (len + 1) * sizeof(wchar_t));
+  std::mbstowcs(buf, utf8, len + 1);
+
+  if (locale != "") {
+    std::setlocale(LC_CTYPE, locale.c_str());
+  }
+  return buf;
+}
+
+char* string::w2utf8(const wchar_t* unicode) {
+  std::string target_locale = "en_US.utf8";
+  const char* c_locale = std::setlocale(LC_CTYPE, nullptr);
+  std::string locale(c_locale ? c_locale : "");
+
+  if (locale != target_locale) {
+    std::setlocale(LC_CTYPE, target_locale.c_str());
+  }
+
+  size_t len = std::wcstombs(nullptr, unicode, 0);
+  char* buf = (char*)malloc((len + 1) * sizeof(char));
+  if (!buf) {
+    if (locale != "") {
+      std::setlocale(LC_CTYPE, locale.c_str());
+    }
+    throw std::runtime_error(strerror(errno));
+  }
+  memset(buf, 0, (len + 1) * sizeof(char));
+  std::wcstombs(buf, unicode, len + 1);
+
+  if (locale != "") {
+    std::setlocale(LC_CTYPE, locale.c_str());
+  }
+  return buf;
+}
+
+string::string(): _str(""), _wstr(L"") {}
+
+string::string(char c) {
+  char str[2] = { c, '\0' };
+  _str = str;
+  wchar_t wstr[2] = { (wchar_t)(c), L'\0' };
+  _wstr = wstr;
+}
+
+string::string(const char* str) {
+  wchar_t* unicode = utf82w(str);
+  _wstr = unicode;
+  free(unicode);
+  this->_sync();
+}
+
+string::string(wchar_t c) {
+  wchar_t wstr[2] = { c, L'\0' };
+  _wstr = wstr;
+  this->_sync();
+}
+
+string::string(const wchar_t* wstr): _wstr(wstr) {
+  this->_sync();
+}
+
+void string::_sync() {
+  char* utf8 = w2utf8(this->_wstr.c_str());
+  this->_str = utf8;
+  free(utf8);
+}
+
+const char* string::c_str() const {
+  return _str.c_str();
+}
+const wchar_t* string::c_strw() const {
+  return _wstr.c_str();
+}
+
+bool string::operator==(const string& other) const {
+  return _wstr == other.c_strw();
+}
+
+bool string::operator!=(const string& other) const {
+  return _wstr != other.c_strw();
+}
+
+string string::operator+(const string& other) const {
+  return (_wstr + other._wstr).c_str();
+}
+
+string& string::operator+=(const string& other) {
+  _wstr += other._wstr;
+  this->_sync();
+  return *this;
+}
+
+bool string::operator<(const string& other) const {
+  return _wstr < other._wstr;
+}
+
+bool string::operator<=(const string& other) const {
+  return _wstr <= other._wstr;
+}
+
+bool string::operator>(const string& other) const {
+  return _wstr > other._wstr;
+}
+
+bool string::operator>=(const string& other) const {
+  return _wstr >= other._wstr;
+}
+
+wchar_t string::operator[](int index) const {
+  return _wstr[index];
+}
+
+int string::length() const {
+  return (int)_wstr.length();
+}
+
+int string::byte_length() const {
+  return (int)_str.length();
+}
+
+string string::char_at(int index) const {
+  return _wstr[index];
+}
+
+unsigned short string::char_code_at(int index) const {
+  return (unsigned short)(_wstr[index]);
+}
+
+string string::substring(int indexStart) const {
+  int l = this->length();
   if (l == 0)
-    return std::wstring({ self[0], L'\0' });
+    return "";
+  if (indexStart >= l) {
+    indexStart = l;
+  } else if (indexStart < 0) {
+    indexStart = 0;
+  }
+
+  string res = "";
+
+  for (int i = indexStart; i < l; i++) {
+    res += (*this)[i];
+  }
+
+  return res;
+}
+
+string string::substring(int indexStart, int indexEnd) const {
+  int l = this->length();
+  if (l == 0)
+    return "";
   if (indexStart >= l) {
     indexStart = l;
   } else if (indexStart < 0) {
@@ -24,7 +197,7 @@ std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) 
     indexEnd = 0;
   }
 
-  if (indexStart == indexEnd) return L"";
+  if (indexStart == indexEnd) return "";
 
   if (indexEnd < indexStart) {
     int tmp = indexStart;
@@ -32,21 +205,98 @@ std::wstring wsubstring(const std::wstring& self, int indexStart, int indexEnd) 
     indexEnd = tmp;
   }
 
-  std::wstring res = L"";
+  string res = "";
 
   for (int i = indexStart; i < indexEnd; i++) {
-    res += self[i];
+    res += (*this)[i];
   }
 
   return res;
 }
 
-std::string substring(const std::string& self, int indexStart, int indexEnd) {
-  return toyo::charset::w2a(wsubstring(toyo::charset::a2w(self), indexStart, indexStart));
+bool string::ends_with(const string& searchString) const {
+  int position = length();
+  return substring(position - searchString.length(), position) == searchString;
 }
 
-std::wstring wslice(const std::wstring& self, int start, int end) {
-  int _length = (int)self.length();
+bool string::ends_with(const string& searchString, int position) const {
+  return substring(position - searchString.length(), position) == searchString;
+}
+
+int string::index_of(const string& searchValue) const {
+  return this->index_of(searchValue, 0);
+}
+
+int string::index_of(const string& searchValue, int fromIndex) const {
+  int thisLength = this->length();
+  if (searchValue == "") {
+    return fromIndex <= 0 ? 0 : (fromIndex <= thisLength ? fromIndex : thisLength);
+  }
+
+  if (fromIndex >= thisLength) {
+    return -1;
+  }
+
+  if (fromIndex < 0) {
+    fromIndex = 0;
+  }
+
+  int len = searchValue.length();
+  for (int i = fromIndex; i < this->length(); i++) {
+    if (searchValue == this->substring(i, i + len)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int string::last_index_of(const string& searchValue) const {
+  return this->last_index_of(searchValue, this->length());
+}
+int string::last_index_of(const string& searchValue, int fromIndex) const {
+  int thisLength = this->length();
+  if (fromIndex < 0) {
+    fromIndex = 0;
+  } else if (fromIndex > thisLength) {
+    fromIndex = thisLength;
+  }
+
+  int len = searchValue.length();
+  for (int i = fromIndex - 1; i >= 0; i--) {
+    if (searchValue == this->substring(i, i + len)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+bool string::includes(const string& searchString) const {
+  return this->includes(searchString, 0);
+}
+
+bool string::includes(const string& searchString, int position) const {
+  if (position + searchString.length() > this->length()) {
+    return false;
+  } else {
+    return -1 != this->index_of(searchString, position);
+  }
+}
+
+string string::replace(const string& searchString, const string& replace) const {
+  std::wstring wstr = _wstr;
+  int i = this->index_of(searchString);
+  if (i == -1) {
+    return *this;
+  }
+
+  return wstr.replace(i, searchString.length(), replace._wstr).c_str();
+}
+
+string string::slice(int start) const {
+  return slice(start, length());
+}
+string string::slice(int start, int end) const {
+  int _length = this->length();
   end--;
   start = start < 0 ? (_length + (start % _length)) : start % _length;
   end = end < 0 ? (_length + (end % _length)) : end % _length;
@@ -60,62 +310,74 @@ std::wstring wslice(const std::wstring& self, int start, int end) {
 
   if (len <= 0) return L"";
 
-  return wsubstring(self, start, end + 1);
+  return substring(start, end + 1);
 }
 
-std::wstring wslice(const std::wstring& self, int start) {
-  return wslice(self, start, (int)self.length());
+string string::repeat(int n) const {
+  if (n <= 0) {
+    return "";
+  }
+
+  string res = "";
+  for (int i = 0; i < n; i++) {
+    res += (*this);
+  }
+
+  return res;
 }
 
-std::string slice(const std::string& self, int start, int end) {
-  return toyo::charset::w2a(wslice(toyo::charset::a2w(self), start, end));
-}
-
-std::string slice(const std::string& self, int start) {
-  return toyo::charset::w2a(wslice(toyo::charset::a2w(self), start));
-}
-
-std::wstring wto_lower_case(const std::wstring& self) {
-  size_t bl = self.length();
+string string::to_lower_case() const {
+  int bl = length();
   wchar_t* res = new wchar_t[bl + 1];
   memset(res, 0, (bl + 1) * sizeof(wchar_t));
-  for (size_t i = 0; i < bl; i++) {
-    if (self[i] >= 65 && self[i] <= 90) {
-      res[i] = self[i] + 32;
+  for (int i = 0; i < bl; i++) {
+    if (_wstr[i] >= 65 && _wstr[i] <= 90) {
+      res[i] = _wstr[i] + 32;
     } else {
-      res[i] = self[i];
+      res[i] = _wstr[i];
     }
   }
   std::wstring ret(res);
   delete[] res;
-  return ret;
+  return ret.c_str();
 }
 
-std::string to_lower_case(const std::string& self) {
-  return toyo::charset::w2a(wto_lower_case(toyo::charset::a2w(self)));
-}
-
-int wlast_index_of(const std::wstring& self, const std::wstring& searchValue, int fromIndex) {
-  int thisLength = (int)self.length();
-  if (fromIndex < 0) {
-    fromIndex = 0;
-  } else if (fromIndex > thisLength) {
-    fromIndex = thisLength;
-  }
-
-  int len = (int)searchValue.length();
-  for (int i = fromIndex - 1; i >= 0; i--) {
-    if (searchValue == wsubstring(self, i, i + len)) {
-      return i;
+string string::to_upper_case() const {
+  int bl = length();
+  wchar_t* res = new wchar_t[bl + 1];
+  memset(res, 0, (bl + 1) * sizeof(wchar_t));
+  for (int i = 0; i < bl; i++) {
+    if (_wstr[i] >= 97 && _wstr[i] <= 122) {
+      res[i] = _wstr[i] - 32;
+    } else {
+      res[i] = _wstr[i];
     }
   }
-  return -1;
+  std::wstring ret(res);
+  delete[] res;
+  res = nullptr;
+  return ret.c_str();
 }
 
-int wlast_index_of(const std::wstring& self, const std::wstring& searchValue) {
-  return wlast_index_of(self, searchValue, (int)self.length());
+string string::trim() const {
+  std::string str = _str;
+  return std::regex_replace(str, std::regex("^[\\s\\xA0]+|[\\s\\xA0]+$"), std::string("")).c_str();
+}
+string string::trim_right() const {
+  std::string str = _str;
+  return std::regex_replace(str, std::regex("[\\s\\xA0]+$"), std::string("")).c_str();
+}
+string string::trim_left() const {
+  std::string str = _str;
+  return std::regex_replace(str, std::regex("^[\\s\\xA0]+"), std::string("")).c_str();
 }
 
+string string::concat(const string& str) const {
+  return (*this + str);
+}
+
+string string::from_char_code(unsigned short num) {
+  return static_cast<wchar_t>(num);
 }
 
 }

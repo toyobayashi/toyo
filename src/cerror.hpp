@@ -2,16 +2,16 @@
 #define __CERROR_HPP__
 
 #include <exception>
-#include <string>
+#include "string.hpp"
 
 class cerror : public std::exception {
 public:
-  cerror(int code, const std::string& message = "");
+  cerror(int code, const toyo::string& message = "");
   virtual const char* what() const noexcept override;
   int code() const;
 private:
   int code_;
-  std::string message_;
+  toyo::string message_;
 };
 
 #endif

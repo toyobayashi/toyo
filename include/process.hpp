@@ -1,15 +1,15 @@
 #ifndef __PROCESS_HPP__
 #define __PROCESS_HPP__
 
-#include <string>
+#include "string.hpp"
 
 namespace toyo {
 
 namespace process {
 
-std::string cwd();
+toyo::string cwd();
 int pid();
-std::string platform();
+toyo::string platform();
 
 } // process
 

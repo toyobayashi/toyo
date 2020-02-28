@@ -68,7 +68,8 @@
     "random": "cpp",
     "string_view": "cpp",
     "sstream": "cpp",
-    "cerrno": "cpp"
+    "cerrno": "cpp",
+    "regex": "cpp"
   },
   "wslProjectRoot": "/mnt/c/Projects/cpp/toyo"
 }

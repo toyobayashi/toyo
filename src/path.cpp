@@ -1,5 +1,6 @@
 #include "win.h"
 #include <vector>
+#include <string>
 #include <cstddef>
 
 #ifndef _WIN32
@@ -11,9 +12,7 @@
 #endif
 
 #include "path.hpp"
-#include "charset.hpp"
 #include "process.hpp"
-#include "string.hpp"
 
 namespace toyo {
 
@@ -74,8 +73,8 @@ static bool _isWindowsDeviceRoot(unsigned short code) {
   return (code >= CHAR_UPPERCASE_A && code <= CHAR_UPPERCASE_Z) || (code >= CHAR_LOWERCASE_A && code <= CHAR_LOWERCASE_Z);
 }
 
-static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRoot, const std::wstring& separator, bool (*isPathSeparator)(unsigned short)) {
-  std::wstring res = L"";
+static toyo::string _normalizeString(const toyo::string& path, bool allowAboveRoot, const toyo::string& separator, bool (*isPathSeparator)(unsigned short)) {
+  toyo::string res = L"";
   int lastSegmentLength = 0;
   int lastSlash = -1;
   int dots = 0;
@@ -96,13 +95,13 @@ static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRo
           res[res.length() - 1] != CHAR_DOT ||
           res[res.length() - 2] != CHAR_DOT) {
           if (res.length() > 2) {
-            const int lastSlashIndex = toyo::string::wlast_index_of(res, separator);
+            const int lastSlashIndex = res.last_index_of(separator);
             if (lastSlashIndex == -1) {
               res = L"";
               lastSegmentLength = 0;
             } else {
-              res = toyo::string::wslice(res, 0, lastSlashIndex);
-              lastSegmentLength = (int)res.length() - 1 - toyo::string::wlast_index_of(res, separator);
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = (int)res.length() - 1 - res.last_index_of(separator);;
             }
             lastSlash = i;
             dots = 0;
@@ -124,9 +123,9 @@ static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRo
         }
       } else {
         if (res.length() > 0)
-          res += separator + toyo::string::wslice(path, lastSlash + 1, i);
+          res += separator + path.slice(lastSlash + 1, i);
         else
-          res = toyo::string::wslice(path, lastSlash + 1, i);
+          res = path.slice(lastSlash + 1, i);
         lastSegmentLength = i - lastSlash - 1;
       }
       lastSlash = i;
@@ -141,15 +140,15 @@ static std::wstring _normalizeString(const std::wstring& path, bool allowAboveRo
 }
 
 namespace win32 {
-  const std::string EOL = "\r\n";
+  const toyo::string EOL = "\r\n";
 
-  std::string normalize(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string normalize(const toyo::string& p) {
+    toyo::string path = p;
     const int len = (int)path.length();
     if (len == 0)
       return ".";
     int rootEnd = 0;
-    std::wstring* device = nullptr;
+    toyo::string* device = nullptr;
     bool isAbsolute = false;
     const unsigned short code = path[0];
 
@@ -165,7 +164,7 @@ namespace win32 {
               break;
           }
           if (j < len && j != last) {
-            std::wstring firstPart = toyo::string::wslice(path, last, j);
+            toyo::string firstPart = path.slice(last, j);
             last = j;
             for (; j < len; ++j) {
               if (!_isPathSeparator(path[j]))
@@ -179,10 +178,10 @@ namespace win32 {
               }
               if (j == len) {
 
-                return toyo::charset::w2a(std::wstring(L"\\\\") + firstPart + L'\\' + toyo::string::wslice(path, last) + L'\\');
+                return toyo::string(L"\\\\") + firstPart + L'\\' + path.slice(last) + L'\\';
               } else if (j != last) {
-                std::wstring tmp = std::wstring(L"\\\\") + firstPart + L'\\' + toyo::string::wslice(path, last, j);
-                device = new std::wstring(tmp);
+                toyo::string tmp = toyo::string(L"\\\\") + firstPart + L'\\' + path.slice(last, j);
+                device = new toyo::string(tmp);
                 rootEnd = j;
               }
             }
@@ -193,8 +192,8 @@ namespace win32 {
       } else if (_isWindowsDeviceRoot(code)) {
 
         if (path[1] == CHAR_COLON) {
-          std::wstring tmp = toyo::string::wslice(path, 0, 2);
-          device = new std::wstring(tmp);
+          toyo::string tmp = path.slice(0, 2);
+          device = new toyo::string(tmp);
           rootEnd = 2;
           if (len > 2) {
             if (_isPathSeparator(path[2])) {
@@ -208,9 +207,9 @@ namespace win32 {
       return "\\";
     }
 
-    std::wstring tail;
+    toyo::string tail;
     if (rootEnd < len) {
-      tail = _normalizeString(toyo::string::wslice(path, rootEnd), !isAbsolute, L"\\", _isPathSeparator);
+      tail = _normalizeString(path.slice(rootEnd), !isAbsolute, L"\\", _isPathSeparator);
     } else {
       tail = L"";
     }
@@ -221,62 +220,61 @@ namespace win32 {
     if (device == nullptr) {
       if (isAbsolute) {
         if (tail.length() > 0)
-          return toyo::charset::w2a(std::wstring(L"\\") + tail);
+          return toyo::string(L"\\") + tail;
         else
           return "\\";
       } else if (tail.length() > 0) {
-        return toyo::charset::w2a(tail);
+        return tail;
       } else {
         return "";
       }
     } else if (isAbsolute) {
       if (tail.length() > 0) {
-        std::wstring _device = *device;
+        toyo::string _device = *device;
         delete device;
-        return toyo::charset::w2a(_device + L'\\' + tail);
+        return (_device + L'\\' + tail);
       } else {
-        std::wstring _device = *device;
+        toyo::string _device = *device;
         delete device;
-        return toyo::charset::w2a(_device + L'\\');
+        return (_device + L'\\');
       }
     } else if (tail.length() > 0) {
-      std::wstring _device = *device;
+      toyo::string _device = *device;
       delete device;
-      return toyo::charset::w2a(_device + tail);
+      return (_device + tail);
     } else {
-      std::wstring _device = *device;
+      toyo::string _device = *device;
       delete device;
-      return toyo::charset::w2a(_device);
+      return (_device);
     }
   }
 
-  std::string resolve(const std::string& arg, const std::string& arg1) {
-    std::vector<std::wstring> arguments = { toyo::charset::a2w(arg), toyo::charset::a2w(arg1) };
+  toyo::string resolve(const toyo::string& arg, const toyo::string& arg1) {
+    std::vector<toyo::string> arguments = { (arg), (arg1) };
 
-    std::wstring resolvedDevice = L"";
-    std::wstring resolvedTail = L"";
+    toyo::string resolvedDevice = L"";
+    toyo::string resolvedTail = L"";
     bool resolvedAbsolute = false;
 
     for (int i = (int)arguments.size() - 1; i >= -1; i--) {
-      std::wstring path = L"";
+      toyo::string path = L"";
       if (i >= 0) {
         path = arguments[i];
       } else if (resolvedDevice == L"") {
-        path = toyo::charset::a2w(toyo::process::cwd());
+        path = (toyo::process::cwd());
       } else {
 #ifdef _WIN32
         wchar_t env[MAX_PATH + 1];
-        if (0 == GetEnvironmentVariableW((std::wstring(L"=") + resolvedDevice).c_str(), env, MAX_PATH + 1)) {
-          path = toyo::charset::a2w(process::cwd());
+        if (0 == GetEnvironmentVariableW((toyo::string(L"=") + resolvedDevice).c_strw(), env, MAX_PATH + 1)) {
+          path = (process::cwd());
         } else {
           path = env;
         }
 #else
-        path = toyo::charset::a2w(process::cwd());
+        path = (process::cwd());
 #endif
         if (path == L"" ||
-          toyo::string::wto_lower_case(toyo::string::wslice(path, 0, 3)) !=
-          toyo::string::wto_lower_case(resolvedDevice) + L'\\') {
+          path.slice(0, 3).to_lower_case() != (resolvedDevice.to_lower_case() + L'\\')) {
           path = resolvedDevice + L'\\';
         }
       }
@@ -287,7 +285,7 @@ namespace win32 {
 
       int len = (int)path.length();
       int rootEnd = 0;
-      std::wstring device = L"";
+      toyo::string device = L"";
       bool isAbsolute = false;
       const unsigned short code = path[0];
 
@@ -303,7 +301,7 @@ namespace win32 {
                 break;
             }
             if (j < len && j != last) {
-              const std::wstring firstPart = toyo::string::wslice(path, last, j);
+              const toyo::string firstPart = path.slice(last, j);
               last = j;
               for (; j < len; ++j) {
                 if (!_isPathSeparator(path[j]))
@@ -316,10 +314,10 @@ namespace win32 {
                     break;
                 }
                 if (j == len) {
-                  device = std::wstring(L"\\\\") + firstPart + L'\\' + toyo::string::wslice(path, last);
+                  device = toyo::string(L"\\\\") + firstPart + L'\\' + path.slice(last);
                   rootEnd = j;
                 } else if (j != last) {
-                  device = std::wstring(L"\\\\") + firstPart + L'\\' + toyo::string::wslice(path, last, j);
+                  device = toyo::string(L"\\\\") + firstPart + L'\\' + path.slice(last, j);
                   rootEnd = j;
                 }
               }
@@ -330,7 +328,7 @@ namespace win32 {
         } else if (_isWindowsDeviceRoot(code)) {
 
           if (path[1] == CHAR_COLON) {
-            device = toyo::string::wslice(path, 0, 2);
+            device = path.slice(0, 2);
             rootEnd = 2;
             if (len > 2) {
               if (_isPathSeparator(path[2])) {
@@ -346,8 +344,7 @@ namespace win32 {
       }
 
       if (device.length() > 0 &&
-        resolvedDevice.length() > 0 &&
-        toyo::string::wto_lower_case(device) != toyo::string::wto_lower_case(resolvedDevice)) {
+        resolvedDevice.length() > 0 && device.to_lower_case() != resolvedDevice.to_lower_case()) {
         continue;
       }
 
@@ -355,7 +352,7 @@ namespace win32 {
         resolvedDevice = device;
       }
       if (!resolvedAbsolute) {
-        resolvedTail = toyo::string::wslice(path, rootEnd) + L'\\' + resolvedTail;
+        resolvedTail = path.slice(rootEnd) + L'\\' + resolvedTail;
         resolvedAbsolute = isAbsolute;
       }
 
@@ -366,30 +363,30 @@ namespace win32 {
     resolvedTail = _normalizeString(resolvedTail, !resolvedAbsolute, L"\\",
       _isPathSeparator);
 
-    std::wstring res = resolvedDevice + (resolvedAbsolute ? std::wstring(L"\\") : std::wstring(L"")) + resolvedTail;
+    toyo::string res = resolvedDevice + (resolvedAbsolute ? toyo::string(L"\\") : toyo::string(L"")) + resolvedTail;
 
-    return toyo::charset::w2a(res == L"" ? L"." : res);
+    return (res == L"" ? L"." : res);
   }
 
-  std::string join(const std::string& arg1, const std::string& arg2) {
-    const std::wstring warg1 = toyo::charset::a2w(arg1);
-    const std::wstring warg2 = toyo::charset::a2w(arg2);
+  toyo::string join(const toyo::string& arg1, const toyo::string& arg2) {
+    const toyo::string warg1 = (arg1);
+    const toyo::string warg2 = (arg2);
 
-    std::wstring joined = L"";
-    std::wstring firstPart = L"";
+    toyo::string joined = L"";
+    toyo::string firstPart = L"";
 
     if (warg1.length() > 0) {
       if (joined == L"")
         joined = firstPart = warg1;
       else
-        joined += (std::wstring(L"\\") + warg1);
+        joined += (toyo::string(L"\\") + warg1);
     }
 
     if (warg2.length() > 0) {
       if (joined == L"")
         joined = firstPart = warg2;
       else
-        joined += (std::wstring(L"\\") + warg2);
+        joined += (toyo::string(L"\\") + warg2);
     }
 
     if (joined == L"")
@@ -420,14 +417,14 @@ namespace win32 {
       }
 
       if (slashCount >= 2)
-        joined = (std::wstring(L"\\") + toyo::string::wslice(joined, slashCount));
+        joined = (toyo::string(L"\\") + joined.slice(slashCount));
     }
 
-    return normalize(toyo::charset::w2a(joined));
+    return win32::normalize(joined);
   }
 
-  bool is_absolute(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  bool is_absolute(const toyo::string& p) {
+    toyo::string path = (p);
     const size_t len = path.length();
     if (len == 0)
       return false;
@@ -445,8 +442,8 @@ namespace win32 {
     return false;
   }
 
-  std::string dirname(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string dirname(const toyo::string& p) {
+    toyo::string path = (p);
     const int len = (int)path.length();
     if (len == 0)
       return ".";
@@ -481,7 +478,7 @@ namespace win32 {
                   break;
               }
               if (j == len) {
-                return toyo::charset::w2a(path);
+                return (path);
               }
               if (j != last) {
                 rootEnd = offset = j + 1;
@@ -499,7 +496,7 @@ namespace win32 {
         }
       }
     } else if (_isPathSeparator(code)) {
-      return toyo::charset::w2a(path);
+      return (path);
     }
 
     for (int i = len - 1; i >= offset; --i) {
@@ -519,15 +516,15 @@ namespace win32 {
       else
         end = rootEnd;
     }
-    return toyo::charset::w2a(toyo::string::wslice(path, 0, end));
+    return (path.slice(0, end));
   }
 
-  std::string to_namespaced_path(const std::string& p) {
+  toyo::string to_namespaced_path(const toyo::string& p) {
     if (p == "") {
       return "";
     }
 
-    const std::wstring resolvedPath = toyo::charset::a2w(win32::resolve(p));
+    const toyo::string resolvedPath = (win32::resolve(p));
 
     if (resolvedPath.length() >= 3) {
       if (resolvedPath[0] == CHAR_BACKWARD_SLASH) {
@@ -535,14 +532,14 @@ namespace win32 {
         if (resolvedPath[1] == CHAR_BACKWARD_SLASH) {
           const int code = resolvedPath[2];
           if (code != CHAR_QUESTION_MARK && code != CHAR_DOT) {
-            return toyo::charset::w2a(std::wstring(L"\\\\?\\UNC\\") + toyo::string::wslice(resolvedPath, 2));
+            return (toyo::string(L"\\\\?\\UNC\\") + resolvedPath.slice(2));
           }
         }
       } else if (_isWindowsDeviceRoot(resolvedPath[0])) {
 
         if (resolvedPath[1] == CHAR_COLON &&
           resolvedPath[2] == CHAR_BACKWARD_SLASH) {
-          return toyo::charset::w2a(std::wstring(L"\\\\?\\") + resolvedPath);
+          return (toyo::string(L"\\\\?\\") + resolvedPath);
         }
       }
     }
@@ -550,8 +547,8 @@ namespace win32 {
     return p;
   }
 
-  std::string basename(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string basename(const toyo::string& p) {
+    toyo::string path = (p);
     int start = 0;
     int end = -1;
     bool matchedSlash = true;
@@ -579,12 +576,12 @@ namespace win32 {
 
     if (end == -1)
       return "";
-    return toyo::charset::w2a(toyo::string::wslice(path, start, end));
+    return (path.slice(start, end));
   }
 
-  std::string basename(const std::string& p, const std::string& e) {
-    std::wstring path = toyo::charset::a2w(p);
-    std::wstring ext = toyo::charset::a2w(e);
+  toyo::string basename(const toyo::string& p, const toyo::string& e) {
+    toyo::string path = (p);
+    toyo::string ext = (e);
 
     int start = 0;
     int end = -1;
@@ -633,14 +630,14 @@ namespace win32 {
         end = firstNonSlashEnd;
       else if (end == -1)
         end = (int)path.length();
-      return toyo::charset::w2a(toyo::string::wslice(path, start, end));
+      return (path.slice(start, end));
     }
 
     return win32::basename(p);
   }
 
-  std::string extname(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string extname(const toyo::string& p) {
+    toyo::string path = (p);
     int start = 0;
     int startDot = -1;
     int startPart = 0;
@@ -685,24 +682,24 @@ namespace win32 {
         startDot == startPart + 1)) {
       return "";
     }
-    return toyo::charset::w2a(toyo::string::wslice(path, startDot, end));
+    return (path.slice(startDot, end));
   }
 
-  std::string relative(const std::string& f, const std::string& t) {
-    std::wstring from = toyo::charset::a2w(f);
-    std::wstring to = toyo::charset::a2w(t);
+  toyo::string relative(const toyo::string& f, const toyo::string& t) {
+    toyo::string from = (f);
+    toyo::string to = (t);
 
     if (from == to)
       return "";
 
-    std::wstring fromOrig = toyo::charset::a2w(win32::resolve(f));
-    std::wstring toOrig = toyo::charset::a2w(win32::resolve(t));
+    toyo::string fromOrig = (win32::resolve(f));
+    toyo::string toOrig = (win32::resolve(t));
 
     if (fromOrig == toOrig)
       return "";
 
-    from = toyo::string::wto_lower_case(fromOrig);
-    to = toyo::string::wto_lower_case(toOrig);
+    from = fromOrig.to_lower_case();
+    to = toOrig.to_lower_case();
 
     if (from == to)
       return "";
@@ -738,9 +735,9 @@ namespace win32 {
       if (i == length) {
         if (toLen > length) {
           if (to[toStart + i] == CHAR_BACKWARD_SLASH) {
-            return toyo::charset::w2a(toyo::string::wslice(toOrig, toStart + i + 1));
+            return (toOrig.slice(toStart + i + 1));
           } else if (i == 2) {
-            return toyo::charset::w2a(toyo::string::wslice(toOrig, toStart + i));
+            return (toOrig.slice(toStart + i));
           }
         }
         if (fromLen > length) {
@@ -761,10 +758,10 @@ namespace win32 {
     }
 
     if (i != length && lastCommonSep == -1) {
-      return toyo::charset::w2a(toOrig);
+      return (toOrig);
     }
 
-    std::wstring out = L"";
+    toyo::string out = L"";
     if (lastCommonSep == -1)
       lastCommonSep = 0;
 
@@ -778,21 +775,21 @@ namespace win32 {
     }
 
     if (out.length() > 0)
-      return toyo::charset::w2a(out + toyo::string::wslice(toOrig, toStart + lastCommonSep, toEnd));
+      return (out + toOrig.slice(toStart + lastCommonSep, toEnd));
     else {
       toStart += lastCommonSep;
       if (toOrig[toStart] == CHAR_BACKWARD_SLASH)
         ++toStart;
-      return toyo::charset::w2a(toyo::string::wslice(toOrig, toStart, toEnd));
+      return (toOrig.slice(toStart, toEnd));
     }
   }
 } // win32
 
 namespace posix {
-  const std::string EOL = "n";
+  const toyo::string EOL = "n";
 
-  std::string normalize(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string normalize(const toyo::string& p) {
+    toyo::string path = (p);
 
     if (path.length() == 0)
       return ".";
@@ -801,7 +798,7 @@ namespace posix {
     const bool trailingSeparator =
       (path[path.length() - 1] == CHAR_FORWARD_SLASH);
 
-    std::wstring newpath = _normalizeString(path, !isAbsolute, L"/", _isPosixPathSeparator);
+    toyo::string newpath = _normalizeString(path, !isAbsolute, L"/", _isPosixPathSeparator);
 
     if (newpath.length() == 0 && !isAbsolute)
       newpath = L'.';
@@ -809,22 +806,22 @@ namespace posix {
       newpath += L'/';
 
     if (isAbsolute)
-      return toyo::charset::w2a(std::wstring(L"/") + newpath);
-    return toyo::charset::w2a(newpath);
+      return (toyo::string(L"/") + newpath);
+    return (newpath);
   }
 
-  std::string resolve(const std::string& arg, const std::string& arg1) {
-    std::vector<std::wstring> arguments = { toyo::charset::a2w(arg), toyo::charset::a2w(arg1) };
+  toyo::string resolve(const toyo::string& arg, const toyo::string& arg1) {
+    std::vector<toyo::string> arguments = { (arg), (arg1) };
 
-    std::wstring resolvedPath = L"";
+    toyo::string resolvedPath = L"";
     bool resolvedAbsolute = false;
 
     for (int i = (int)arguments.size() - 1; i >= -1 && !resolvedAbsolute; i--) {
-      std::wstring path;
+      toyo::string path;
       if (i >= 0)
         path = arguments[i];
       else {
-        path = toyo::charset::a2w(toyo::process::cwd());
+        path = (toyo::process::cwd());
       }
 
       if (path.length() == 0) {
@@ -840,50 +837,50 @@ namespace posix {
 
     if (resolvedAbsolute) {
       if (resolvedPath.length() > 0)
-        return toyo::charset::w2a(std::wstring(L"/") + resolvedPath);
+        return (toyo::string(L"/") + resolvedPath);
       else
-        return toyo::charset::w2a(std::wstring(L"/"));
+        return (toyo::string(L"/"));
     } else if (resolvedPath.length() > 0) {
-      return toyo::charset::w2a(resolvedPath);
+      return (resolvedPath);
     } else {
       return ".";
     }
   }
 
-  std::string join(const std::string& arg1, const std::string& arg2) {
-    const std::wstring warg1 = toyo::charset::a2w(arg1);
-    const std::wstring warg2 = toyo::charset::a2w(arg2);
+  toyo::string join(const toyo::string& arg1, const toyo::string& arg2) {
+    const toyo::string warg1 = (arg1);
+    const toyo::string warg2 = (arg2);
 
     if (warg1 == L"" && warg2 == L"")
       return ".";
-    std::wstring joined = L"";
+    toyo::string joined = L"";
 
     if (warg1.length() > 0) {
       if (joined == L"")
         joined = warg1;
       else
-        joined += (std::wstring(L"/") + warg1);
+        joined += (toyo::string(L"/") + warg1);
     }
 
     if (warg2.length() > 0) {
       if (joined == L"")
         joined = warg2;
       else
-        joined += (std::wstring(L"/") + warg2);
+        joined += (toyo::string(L"/") + warg2);
     }
 
     if (joined == L"")
       return ".";
-    return normalize(toyo::charset::w2a(joined));
+    return normalize((joined));
   }
 
-  bool is_absolute(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  bool is_absolute(const toyo::string& p) {
+    toyo::string path = (p);
     return path.length() > 0 && path[0] == CHAR_FORWARD_SLASH;
   }
 
-  std::string dirname(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string dirname(const toyo::string& p) {
+    toyo::string path = (p);
     if (path.length() == 0)
       return ".";
     const bool hasRoot = (path[0] == CHAR_FORWARD_SLASH);
@@ -904,15 +901,15 @@ namespace posix {
       return hasRoot ? "/" : ".";
     if (hasRoot && end == 1)
       return "//";
-    return toyo::charset::w2a(toyo::string::wslice(path, 0, end));
+    return (path.slice(0, end));
   }
 
-  std::string to_namespaced_path(const std::string& path) {
+  toyo::string to_namespaced_path(const toyo::string& path) {
     return path;
   }
 
-  std::string basename(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string basename(const toyo::string& p) {
+    toyo::string path = (p);
     int start = 0;
     int end = -1;
     bool matchedSlash = true;
@@ -932,12 +929,12 @@ namespace posix {
 
     if (end == -1)
       return "";
-    return toyo::charset::w2a(toyo::string::wslice(path, start, end));
+    return (path.slice(start, end));
   }
 
-  std::string basename(const std::string& p, const std::string& e) {
-    std::wstring path = toyo::charset::a2w(p);
-    std::wstring ext = toyo::charset::a2w(e);
+  toyo::string basename(const toyo::string& p, const toyo::string& e) {
+    toyo::string path = (p);
+    toyo::string ext = (e);
 
     int start = 0;
     int end = -1;
@@ -978,14 +975,14 @@ namespace posix {
         end = firstNonSlashEnd;
       else if (end == -1)
         end = (int)path.length();
-      return toyo::charset::w2a(toyo::string::wslice(path, start, end));
+      return (path.slice(start, end));
     }
 
     return posix::basename(p);
   }
 
-  std::string extname(const std::string& p) {
-    std::wstring path = toyo::charset::a2w(p);
+  toyo::string extname(const toyo::string& p) {
+    toyo::string path = (p);
     int startDot = -1;
     int startPart = 0;
     int end = -1;
@@ -1022,18 +1019,18 @@ namespace posix {
         startDot == startPart + 1)) {
       return "";
     }
-    return toyo::charset::w2a(toyo::string::wslice(path, startDot, end));
+    return (path.slice(startDot, end));
   }
 
-  std::string relative(const std::string& f, const std::string& t) {
-    std::wstring from = toyo::charset::a2w(f);
-    std::wstring to = toyo::charset::a2w(t);
+  toyo::string relative(const toyo::string& f, const toyo::string& t) {
+    toyo::string from = (f);
+    toyo::string to = (t);
 
     if (from == to)
       return "";
 
-    from = toyo::charset::a2w(posix::resolve(f));
-    to = toyo::charset::a2w(posix::resolve(t));
+    from = (posix::resolve(f));
+    to = (posix::resolve(t));
 
     if (from == to)
       return "";
@@ -1062,9 +1059,9 @@ namespace posix {
       if (i == length) {
         if (toLen > length) {
           if (to[toStart + i] == CHAR_FORWARD_SLASH) {
-            return toyo::charset::w2a(toyo::string::wslice(to, toStart + i + 1));
+            return (to.slice(toStart + i + 1));
           } else if (i == 0) {
-            return toyo::charset::w2a(toyo::string::wslice(to, toStart + i));
+            return (to.slice(toStart + i));
           }
         } else if (fromLen > length) {
           if (from[fromStart + i] == CHAR_FORWARD_SLASH) {
@@ -1083,7 +1080,7 @@ namespace posix {
         lastCommonSep = i;
     }
 
-    std::wstring out = L"";
+    toyo::string out = L"";
     for (i = fromStart + lastCommonSep + 1; i <= fromEnd; ++i) {
       if (i == fromEnd || from[i] == CHAR_FORWARD_SLASH) {
         if (out.length() == 0)
@@ -1094,17 +1091,17 @@ namespace posix {
     }
 
     if (out.length() > 0)
-      return toyo::charset::w2a(out + toyo::string::wslice(to, toStart + lastCommonSep));
+      return (out + to.slice(toStart + lastCommonSep));
     else {
       toStart += lastCommonSep;
       if (to[toStart] == CHAR_FORWARD_SLASH)
         ++toStart;
-      return toyo::charset::w2a(toyo::string::wslice(to, toStart));
+      return (to.slice(toStart));
     }
   }
 } // posix
 
-std::string normalize(const std::string& p) {
+toyo::string normalize(const toyo::string& p) {
 #ifdef _WIN32
   return win32::normalize(p);
 #else
@@ -1112,7 +1109,7 @@ std::string normalize(const std::string& p) {
 #endif
 }
 
-bool is_absolute(const std::string& p) {
+bool is_absolute(const toyo::string& p) {
 #ifdef _WIN32
   return win32::is_absolute(p);
 #else
@@ -1120,7 +1117,7 @@ bool is_absolute(const std::string& p) {
 #endif
 }
 
-std::string dirname(const std::string& p) {
+toyo::string dirname(const toyo::string& p) {
 #ifdef _WIN32
   return win32::dirname(p);
 #else
@@ -1128,7 +1125,7 @@ std::string dirname(const std::string& p) {
 #endif
 }
 
-std::string to_namespaced_path(const std::string& p) {
+toyo::string to_namespaced_path(const toyo::string& p) {
 #ifdef _WIN32
   return win32::to_namespaced_path(p);
 #else
@@ -1136,7 +1133,7 @@ std::string to_namespaced_path(const std::string& p) {
 #endif
 }
 
-std::string basename(const std::string& p) {
+toyo::string basename(const toyo::string& p) {
 #ifdef _WIN32
   return win32::basename(p);
 #else
@@ -1144,7 +1141,7 @@ std::string basename(const std::string& p) {
 #endif
 }
 
-std::string basename(const std::string& p, const std::string& ext) {
+toyo::string basename(const toyo::string& p, const toyo::string& ext) {
 #ifdef _WIN32
   return win32::basename(p, ext);
 #else
@@ -1152,7 +1149,7 @@ std::string basename(const std::string& p, const std::string& ext) {
 #endif
 }
 
-std::string extname(const std::string& p) {
+toyo::string extname(const toyo::string& p) {
 #ifdef _WIN32
   return win32::extname(p);
 #else
@@ -1160,7 +1157,7 @@ std::string extname(const std::string& p) {
 #endif
 }
 
-std::string relative(const std::string& f, const std::string& t) {
+toyo::string relative(const toyo::string& f, const toyo::string& t) {
 #ifdef _WIN32
   return win32::relative(f, t);
 #else
@@ -1168,12 +1165,12 @@ std::string relative(const std::string& f, const std::string& t) {
 #endif
 }
 
-std::string __filename() {
+toyo::string __filename() {
 #if defined(_WIN32)
   wchar_t buf[MAX_PATH] = { 0 };
   DWORD code = GetModuleFileNameW(nullptr, buf, MAX_PATH);
   if (code == 0) return "";
-  return toyo::charset::w2a(buf);
+  return (buf);
 #elif defined(__APPLE__)
   char buf[1024] = { 0 };
   unsigned size = 1023;
@@ -1188,23 +1185,23 @@ std::string __filename() {
 #endif
 }
 
-std::string __dirname() {
+toyo::string __dirname() {
   return dirname(__filename());
 }
 
 path::path(): dir_(""), root_(""), base_(""), name_(""), ext_("") {}
 
 #ifdef _WIN32
-path::path(const std::string& p): path(p, true) {}
-path::path(const char* p): path(std::string(p), true) {}
+path::path(const toyo::string& p): path(p, true) {}
+path::path(const char* p): path(toyo::string(p), true) {}
 #else
-path::path(const std::string& p): path(p, false) {}
-path::path(const char* p): path(std::string(p), false) {}
+path::path(const toyo::string& p): path(p, false) {}
+path::path(const char* p): path(toyo::string(p), false) {}
 #endif
 
-path::path(const std::string& p, bool is_win32): path() {
+path::path(const toyo::string& p, bool is_win32): path() {
   if (is_win32) {
-    std::wstring path = toyo::charset::a2w(p);
+    toyo::string path = (p);
 
     if (path.length() == 0) {
       return;
@@ -1252,27 +1249,27 @@ path::path(const std::string& p, bool is_win32): path() {
           if (len > 2) {
             if (_isPathSeparator(path[2])) {
               if (len == 3) {
-                std::string apath = toyo::charset::w2a(path);
+                toyo::string apath = (path);
                 this->root_ = this->dir_ = apath;
                 return;
               }
               rootEnd = 3;
             }
           } else {
-            std::string apath = toyo::charset::w2a(path);
+            toyo::string apath = (path);
             this->root_ = this->dir_ = apath;
             return;
           }
         }
       }
     } else if (_isPathSeparator(code)) {
-      std::string apath = toyo::charset::w2a(path);
+      toyo::string apath = (path);
       this->root_ = this->dir_ = apath;
       return;
     }
 
     if (rootEnd > 0) {
-      this->root_ = toyo::charset::w2a(toyo::string::wslice(path, 0, rootEnd));
+      this->root_ = (path.slice(0, rootEnd));
     }
 
     int startDot = -1;
@@ -1313,21 +1310,21 @@ path::path(const std::string& p, bool is_win32): path() {
         startDot == end - 1 &&
         startDot == startPart + 1)) {
       if (end != -1) {
-        std::string tmp = toyo::charset::w2a(toyo::string::wslice(path, startPart, end));
+        toyo::string tmp = (path.slice(startPart, end));
         this->base_ = this->name_ = tmp;
       }
     } else {
-      this->name_ = toyo::charset::w2a(toyo::string::wslice(path, startPart, startDot));
-      this->base_ = toyo::charset::w2a(toyo::string::wslice(path, startPart, end));
-      this->ext_ = toyo::charset::w2a(toyo::string::wslice(path, startDot, end));
+      this->name_ = (path.slice(startPart, startDot));
+      this->base_ = (path.slice(startPart, end));
+      this->ext_ = (path.slice(startDot, end));
     }
 
     if (startPart > 0 && startPart != rootEnd)
-      this->dir_ = toyo::charset::w2a(toyo::string::wslice(path, 0, startPart - 1));
+      this->dir_ = (path.slice(0, startPart - 1));
     else
       this->dir_ = this->root_;
   } else {
-    std::wstring path = toyo::charset::a2w(p);
+    toyo::string path = (p);
     if (path.length() == 0) {
       return;
     }
@@ -1378,50 +1375,50 @@ path::path(const std::string& p, bool is_win32): path() {
         startDot == startPart + 1)) {
       if (end != -1) {
         if (startPart == 0 && isAbsolute) {
-          std::string tmp = toyo::charset::w2a(toyo::string::wslice(path, 1, end));
+          toyo::string tmp = (path.slice(1, end));
           this->base_ = this->name_ = tmp;
         } else {
-          std::string tmp = toyo::charset::w2a(toyo::string::wslice(path, startPart, end));
+          toyo::string tmp = (path.slice(startPart, end));
           this->base_ = this->name_ = tmp;
         }
       }
     } else {
       if (startPart == 0 && isAbsolute) {
-        this->name_ = toyo::charset::w2a(toyo::string::wslice(path, 1, startDot));
-        this->base_ = toyo::charset::w2a(toyo::string::wslice(path, 1, end));
+        this->name_ = (path.slice(1, startDot));
+        this->base_ = (path.slice(1, end));
       } else {
-        this->name_ = toyo::charset::w2a(toyo::string::wslice(path, startPart, startDot));
-        this->base_ = toyo::charset::w2a(toyo::string::wslice(path, startPart, end));
+        this->name_ = (path.slice(startPart, startDot));
+        this->base_ = (path.slice(startPart, end));
       }
-      this->ext_ = toyo::charset::w2a(toyo::string::wslice(path, startDot, end));
+      this->ext_ = (path.slice(startDot, end));
     }
 
     if (startPart > 0)
-      this->dir_ = toyo::charset::w2a(toyo::string::wslice(path, 0, startPart - 1));
+      this->dir_ = (path.slice(0, startPart - 1));
     else if (isAbsolute)
       this->dir_ = "/";
   }
 }
 
-path path::parse_win32(const std::string& p) { return path(p, true); }
+path path::parse_win32(const toyo::string& p) { return path(p, true); }
 
-path path::parse_posix(const std::string& p) { return path(p, false); }
+path path::parse_posix(const toyo::string& p) { return path(p, false); }
 
-path path::parse(const std::string& p) { return path(p); }
+path path::parse(const toyo::string& p) { return path(p); }
 
-std::string path::dir() const { return this->dir_; }
-std::string path::root() const { return this->root_; }
-std::string path::base() const { return this->base_; }
-std::string path::name() const { return this->name_; }
-std::string path::ext() const { return this->ext_; }
+toyo::string path::dir() const { return this->dir_; }
+toyo::string path::root() const { return this->root_; }
+toyo::string path::base() const { return this->base_; }
+toyo::string path::name() const { return this->name_; }
+toyo::string path::ext() const { return this->ext_; }
 
-path& path::dir(const std::string& d) { this->dir_ = d; return *this; }
-path& path::root(const std::string& r) { this->root_ = r; return *this; }
-path& path::base(const std::string& b) { this->base_ = b; return *this; }
-path& path::name(const std::string& n) { this->name_ = n; return *this; }
-path& path::ext(const std::string& e) { this->ext_ = e; return *this; }
+path& path::dir(const toyo::string& d) { this->dir_ = d; return *this; }
+path& path::root(const toyo::string& r) { this->root_ = r; return *this; }
+path& path::base(const toyo::string& b) { this->base_ = b; return *this; }
+path& path::name(const toyo::string& n) { this->name_ = n; return *this; }
+path& path::ext(const toyo::string& e) { this->ext_ = e; return *this; }
 
-// path& path::operator=(const std::string& other) {
+// path& path::operator=(const toyo::string& other) {
 //   return this->operator=(path(other));
 // }
 
@@ -1442,9 +1439,9 @@ path& path::operator+=(const path& p) {
   return *this;
 }
 
-std::string path::_format(const std::string& sep) const {
-  const std::string& dir = (this->dir_ == "" ?  this->root_ : this->dir_);
-  const std::string& base = (this->base_ != "" ? this->base_ :
+toyo::string path::_format(const toyo::string& sep) const {
+  const toyo::string& dir = (this->dir_ == "" ?  this->root_ : this->dir_);
+  const toyo::string& base = (this->base_ != "" ? this->base_ :
     (this->name_ + this->ext_));
   if (dir == "") {
     return base;
@@ -1455,15 +1452,15 @@ std::string path::_format(const std::string& sep) const {
   return dir + sep + base;
 }
 
-std::string path::format_win32() const {
+toyo::string path::format_win32() const {
   return this->_format("\\");
 }
 
-std::string path::format_posix() const {
+toyo::string path::format_posix() const {
   return this->_format("/");
 }
 
-std::string path::format() const {
+toyo::string path::format() const {
 #ifdef _WIN32
   return format_win32();
 #else

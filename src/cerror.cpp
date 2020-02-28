@@ -2,11 +2,11 @@
 
 #include "cerror.hpp"
 
-cerror::cerror(int code, const std::string& message): code_(code) {
+cerror::cerror(int code, const toyo::string& message): code_(code) {
   if (message != "") {
-    this->message_ = std::string(strerror(code_)) + ", " + message;
+    this->message_ = toyo::string(strerror(code_)) + ", " + message;
   } else {
-    this->message_ = std::string(strerror(code_)) + ".";
+    this->message_ = toyo::string(strerror(code_)) + ".";
   }
 }
 
