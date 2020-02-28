@@ -33,6 +33,10 @@ class string {
   bool operator!=(const string&) const;
 
   string operator+(const string&) const;
+  string operator+(char) const;
+  string operator+(const char*) const;
+  string operator+(wchar_t) const;
+  string operator+(const wchar_t*) const;
 
   string& operator+=(const string&);
 
@@ -98,6 +102,9 @@ class string {
   std::wstring _wstr;
   void _sync();
 };
+
+string operator+(const char*, const string&);
+string operator+(const wchar_t*, const string&);
 
 }
 

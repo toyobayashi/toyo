@@ -118,7 +118,38 @@ bool string::operator!=(const string& other) const {
 }
 
 string string::operator+(const string& other) const {
-  return (_wstr + other._wstr).c_str();
+  string res;
+  res._wstr = _wstr + other._wstr;
+  res._sync();
+  return res;
+}
+string string::operator+(char other) const {
+  string res;
+  wchar_t wstr[2] = { (wchar_t)other, L'\0' };
+  res._wstr = this->_wstr + wstr;
+  res._sync();
+  return res;
+}
+string string::operator+(const char* other) const {
+  string res;
+  wchar_t* tmp = string::utf82w(other);
+  res._wstr = this->_wstr + tmp;
+  free(tmp);
+  res._sync();
+  return res;
+}
+string string::operator+(wchar_t other) const {
+  string res;
+  wchar_t wstr[2] = { other, L'\0' };
+  res._wstr = this->_wstr + wstr;
+  res._sync();
+  return res;
+}
+string string::operator+(const wchar_t* other) const {
+  string res;
+  res._wstr = this->_wstr + other;
+  res._sync();
+  return res;
 }
 
 string& string::operator+=(const string& other) {
@@ -415,6 +446,14 @@ string string::concat(const string& str) const {
 
 string string::from_char_code(unsigned short num) {
   return static_cast<wchar_t>(num);
+}
+
+string operator+(const char* left, const string& right) {
+  return (std::string(left) + std::string(right.c_str())).c_str();
+}
+
+string operator+(const wchar_t* left, const string& right) {
+  return (std::wstring(left) + std::wstring(right.c_strw())).c_str();
 }
 
 }
