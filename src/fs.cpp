@@ -979,17 +979,16 @@ std::vector<std::string> readdir(const std::string& p) {
   return res;
 }
 
-bool access(const std::string& p, int mode) {
+void access(const std::string& p, int mode) {
   std::string npath = path::normalize(p);
 #ifdef _WIN32
   std::wstring path = toyo::charset::a2w(npath);
-  // return (_waccess(path.c_str(), mode) == 0);
 
   DWORD attr = GetFileAttributesW(path.c_str());
 
   if (attr == INVALID_FILE_ATTRIBUTES) {
-    return false;
-    // throw std::runtime_error(get_last_error_message() + " access \"" + p + "\"");
+    // return false;
+    throw std::runtime_error(get_last_error_message() + " access \"" + p + "\"");
   }
 
   /*
@@ -1002,28 +1001,29 @@ bool access(const std::string& p, int mode) {
   if (!(mode & fs::w_ok) ||
       !(attr & FILE_ATTRIBUTE_READONLY) ||
       (attr & FILE_ATTRIBUTE_DIRECTORY)) {
-    return true;
+    return;
   } else {
-    return false;
-    // throw cerror(EPERM, "access \"" + p + "\"");
+    // return false;
+    throw cerror(EPERM, "access \"" + p + "\"");
   }
 #else
-  return (::access(npath.c_str(), mode) == 0);
+  if (::access(npath.c_str(), mode) != 0) {
+    throw cerror(errno, "access \"" + p + "\"");
+  }
 #endif
 }
 
 bool exists(const std::string& p) {
-  // return fs::access(p, f_ok);
-  bool baccess = fs::access(p, f_ok);
-  if (baccess) {
-    return true;
-  }
-
   try {
-    fs::lstat(p);
+    fs::access(p, f_ok);
     return true;
   } catch (const std::exception&) {
-    return false;
+    try {
+      fs::lstat(p);
+      return true;
+    } catch (const std::exception&) {
+      return false;
+    }
   }
 }
 
