@@ -151,7 +151,7 @@ static int test_readdir() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    console::log(message);
+    console::error(message);
   }
 
   return 0;
@@ -181,7 +181,7 @@ static int test_stat() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    console::log(message);
+    console::error(message);
   }
 
   try {
@@ -190,7 +190,7 @@ static int test_stat() {
   } catch (const std::exception& e) {
     std::string message = e.what();
     expect(message.find("No such file or directory") != std::string::npos)
-    console::log(message);
+    console::error(message);
   }
 
   try {
@@ -199,7 +199,7 @@ static int test_stat() {
     expect(stat.is_directory())
     expect(stat2.is_directory())
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
   }
 
   try {
@@ -208,7 +208,7 @@ static int test_stat() {
     expect(stat.is_file());
     expect(stat2.is_file());
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
   }
 
   try {
@@ -227,7 +227,7 @@ static int test_stat() {
     fs::remove("slk");
     expect(!fs::exists("slk"))
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
   }
 
   try {
@@ -236,7 +236,7 @@ static int test_stat() {
     fs::remove("slk2");
     expect(!fs::exists("slk2"))
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
   }
 
   return 0;
@@ -247,7 +247,7 @@ static int test_mkdirs() {
   try {
     fs::mkdirs(mkdir0);
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
     return -1;
   }
 
@@ -257,7 +257,7 @@ static int test_mkdirs() {
     expect(fs::exists(mkdir1));
     fs::remove(mkdir1);
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
     return -1;
   }
 
@@ -268,7 +268,7 @@ static int test_mkdirs() {
     expect(fs::exists(mkdir2));
     fs::remove(root);
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
     return -1;
   }
 
@@ -301,7 +301,7 @@ static int test_copy() {
     fs::copy_file(s, d);
   } catch (const std::exception& e) {
     fs::remove(s);
-    console::log(e.what());
+    console::error(e.what());
     return 0;
   }
   expect(fs::exists(d))
@@ -309,7 +309,7 @@ static int test_copy() {
     fs::copy_file(s, d, true);
     return -1;
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
     expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))
@@ -325,7 +325,7 @@ static int test_read_write() {
   try {
     fs::write_file("testwrite.txt", data);
   } catch (const std::exception& e) {
-    console::log(e.what());
+    console::error(e.what());
     return -1;
   }
 
@@ -351,6 +351,34 @@ static int test_read_write() {
     expect(std::string(err.what()).find("No such file or directory") != std::string::npos)
   }
   return 0;
+}
+
+void test_console() {
+  console::log("中文测试");
+  console::log(std::vector<std::string>({"中文测试", "2"}));
+  console::log(std::vector<unsigned char>({0x01, 0x66}));
+  console::log(std::vector<int>({0x01, 0x66}));
+  console::log(-9.666);
+  console::log(-90);
+  console::info("中文测试");
+  console::info(std::vector<std::string>({"中文测试", "2"}));
+  console::info(std::vector<unsigned char>({0x01, 0x66}));
+  console::info(std::vector<int>({0x01, 0x66}));
+  console::info(-9.666);
+  console::info(-90);
+  console::warn("中文测试");
+  console::warn(std::vector<std::string>({"中文测试", "2"}));
+  console::warn(std::vector<unsigned char>({0x01, 0x66}));
+  console::warn(std::vector<int>({0x01, 0x66}));
+  console::warn(-9.666);
+  console::warn(-90);
+  console::error("中文测试");
+  console::error(std::vector<std::string>({"中文测试", "2"}));
+  console::error(std::vector<unsigned char>({0x01, 0x66}));
+  console::error(std::vector<int>({0x01, 0x66}));
+  console::error(-9.666);
+  console::error(-90);
+  console::log(std::string(""));
 }
 
 int main() {
@@ -388,18 +416,14 @@ int main() {
 
   int exit_code = fail > 0 ? -1 : 0;
 
+  test_console();
   console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
   console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
   console::log("%s __dirname: %s", charset::a2ocp("所在目录").c_str(), toyo::path::__dirname().c_str());
   console::log(std::string(""));
-  console::log("中文测试");
-  console::log(std::vector<std::string>({"中文测试", "2"}));
-  console::log(std::vector<unsigned char>({0x01, 0x66}));
-  console::log(std::vector<int>({0x01, 0x66}));
-  console::log(-9.666);
-  console::log(-90);
-  console::log(std::string(""));
   console::log("exit: %d, pid: %d", exit_code, toyo::process::pid());
+  console::write("erase");
+  console::clear_line();
   // console::clear();
   return exit_code;
 }
