@@ -4,3 +4,4 @@ project(toyo)
 
 include(cmake/toyo.cmake)
 include(cmake/toyotest.cmake)
+include(cmake/oid.cmake)

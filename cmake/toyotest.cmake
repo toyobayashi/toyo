@@ -1,7 +1,9 @@
-file(GLOB_RECURSE TEST_SOURCE_FILES "test/*.c" "test/*.cpp")
+# file(GLOB_RECURSE TEST_SOURCE_FILES "test/*.c" "test/*.cpp")
 
 add_executable(toyotest
-  ${TEST_SOURCE_FILES}
+  # ${TEST_SOURCE_FILES}
+  "test/main.cpp"
+  "test/mocha.c"
 )
 
 set_target_properties(toyotest PROPERTIES CXX_STANDARD 11)
