@@ -7,7 +7,8 @@
       "command": "build.bat",
       "args": [
         "Debug",
-        "Win32"
+        "Win32",
+        "static"
       ],
       "group": "build"
     },
@@ -17,7 +18,8 @@
       "command": "build.bat",
       "args": [
         "Release",
-        "Win32"
+        "Win32",
+        "static"
       ],
       "group": "build"
     },

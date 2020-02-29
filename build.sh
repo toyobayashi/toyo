@@ -1,15 +1,21 @@
-if [ "$1" == "" ]; then
-  type="Release"
-else
-  type="$1"
-fi
+type="Release"
+dll="false"
+
+until [ $# -eq 0 ]
+do
+if [ "$1" == "Release" ]; then type="$1"; fi
+if [ "$1" == "Debug" ]; then type="$1"; fi
+if [ "$1" == "dll" ]; then dll="true"; fi
+shift
+done
 
 unamestr=`uname`
 os=`echo $unamestr | tr "A-Z" "a-z"`
 
 mkdir -p "./build/$os/$type"
 cd "./build/$os/$type"
-cmake -DCMAKE_BUILD_TYPE=$type ../../..
+echo "cmake -DBUILD_DLL=$dll -DCMAKE_BUILD_TYPE=$type ../../.."
+cmake -DBUILD_DLL="$dll" -DCMAKE_BUILD_TYPE=$type ../../..
 cmake --build .
 cd ../../..
 
