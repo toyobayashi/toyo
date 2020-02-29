@@ -257,8 +257,8 @@ static int test_mkdirs() {
 
 #ifdef _WIN32
   void* dll = process::dlopen(path::join(path::__dirname(), "oid.dll"), 0);
-// #elif defined(__APPLE)
-//   void* dll = process::dlopen(path::join(path::__dirname(), "liboid.dylib"), 1);
+#elif defined(__APPLE__)
+  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.dylib"), 1);
 #else
   void* dll = process::dlopen(path::join(path::__dirname(), "liboid.so"), 1);
 #endif
