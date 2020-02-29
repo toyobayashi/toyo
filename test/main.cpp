@@ -256,11 +256,11 @@ static int test_mkdirs() {
   }
 
 #ifdef _WIN32
-  void* dll = process::dlopen(path::join(path::__dirname(), "oid.dll"), 0);
+  void* dll = process::dlopen(path::join(path::__dirname(), "oid.dll"));
 #elif defined(__APPLE__)
-  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.dylib"), 1);
+  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.dylib"));
 #else
-  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.so"), 1);
+  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.so"));
 #endif
 
   int (*construct)(object_id*) = (int (*)(object_id*))process::dlsym(dll, "oid_construct");
