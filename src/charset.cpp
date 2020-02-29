@@ -1,4 +1,4 @@
-#include "win.h"
+#include "winerr.hpp"
 
 #include <clocale>
 #include <cstdlib>
@@ -78,13 +78,7 @@ static std::string _w2a(const std::wstring& wstr, int code_page) {
 #ifdef _WIN32
   int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
   if (len == -1) {
-    int size = 0;
-    get_last_error(nullptr, &size);
-    char* buf = new char[size];
-    get_last_error(buf, &size);
-    std::string res(buf);
-    delete buf;
-    throw std::exception(res.c_str());
+    throw std::exception(get_win32_last_error_message().c_str());
   }
   char* buf = new char[len];
   memset(buf, 0, len * sizeof(char));

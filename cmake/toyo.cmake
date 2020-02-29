@@ -17,6 +17,8 @@ if(WIN32 AND MSVC)
     UNICODE
     _UNICODE
   )
+else()
+  target_link_libraries(toyo dl)
 endif()
 
 target_include_directories(toyo

@@ -1,10 +1,17 @@
-#include "win.h"
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+#endif
 
 #ifdef _WIN32
 #include <direct.h>
 #include <process.h>
+#include "windlfcn.h"
 #else
 #include <unistd.h>
+#include <dlfcn.h>
 #endif
 
 #include <cstdlib>
@@ -67,6 +74,19 @@ std::string platform() {
 #else
   return "unknown";
 #endif
+}
+
+void* dlopen(const std::string& file, int mode) {
+  return ::dlopen(file.c_str(), mode);
+}
+int dlclose(void* handle) {
+  return ::dlclose(handle);
+}
+void* dlsym(void* handle, const std::string& name) {
+  return ::dlsym(handle, name.c_str());
+}
+std::string dlerror() {
+  return ::dlerror();
 }
 
 } // process

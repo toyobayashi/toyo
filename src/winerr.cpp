@@ -1,20 +1,12 @@
-#include "win.h"
-
 #ifdef _WIN32
 
-#include <string>
-#include <cstring>
-
+#include <exception>
+#include "winerr.hpp"
 #include "charset.hpp"
 
-int get_last_error(char* message, int* size) {
-  int code = GetLastError();
-  if (!message && !size) {
-    return code;
-  }
-
+std::string get_win32_error_message(DWORD code) {
   LPVOID buf;
-  if (FormatMessage(
+  if (FormatMessageW(
     FORMAT_MESSAGE_FROM_SYSTEM
     | FORMAT_MESSAGE_IGNORE_INSERTS
     | FORMAT_MESSAGE_ALLOCATE_BUFFER,
@@ -31,19 +23,16 @@ int get_last_error(char* message, int* size) {
     msg = msg.substr(0, pos - 1);
     std::string utf8str = toyo::charset::w2a(msg);
 
-    if (!message) {
-      if (size) {
-        *size = (int)utf8str.length() + 1;
-      }
-    } else {
-      if (size) {
-        memcpy(message, utf8str.c_str(), *size);
-      } else {
-        strcpy(message, utf8str.c_str());
-      }
-    }
+    return utf8str;
+  } else {
+    char buf[10] = { 0 };
+    _itoa(GetLastError(), buf, 10);
+    throw std::exception((std::string("Cannot format message. Win32 error code: ") + buf).c_str());
   }
-  return code;
+}
+
+std::string get_win32_last_error_message() {
+  return get_win32_error_message(GetLastError());
 }
 
 #endif
