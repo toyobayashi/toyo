@@ -1,4 +1,4 @@
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
+file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.c")
 
 add_library(toyo STATIC
   ${SOURCE_FILES}
