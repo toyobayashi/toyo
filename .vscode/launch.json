@@ -5,7 +5,7 @@
       "name": "MSVC",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\build\\win\\Win32\\Debug\\toyotest.exe",
+      "program": "${workspaceFolder}\\build\\win\\Win32\\Debug\\test.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
@@ -17,7 +17,7 @@
       "name": "Linux",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${config:wslProjectRoot}/build/linux/Debug/toyotest",
+      "program": "${config:wslProjectRoot}/build/linux/Debug/test",
       "args": [
         ""
       ],
@@ -40,7 +40,7 @@
       "name": "Windows WSL",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${config:wslProjectRoot}/build/linux/Debug/toyotest",
+      "program": "${config:wslProjectRoot}/build/linux/Debug/test",
       "args": [
         ""
       ],

@@ -20,10 +20,11 @@ cmake --build .
 cd ../../..
 
 if [ "$type" == "Release" ]; then
-  mkdir -p "dist/include/toyo"
+  headerout="dist/include/toyo"
+  mkdir -p "$headerout"
   mkdir -p "dist/$os/lib"
   mkdir -p "dist/$os/bin"
-  cp ./include/* dist/include/toyo
+  cp ./include/* "$headerout"
   cp ./build/"$os"/Release/*.a "dist/$os/lib"
   cp ./build/"$os"/Release/{*.so,*.dylib} "dist/$os/bin"
 

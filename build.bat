@@ -32,7 +32,11 @@ if not exist %cmakebuilddir% mkdir %cmakebuilddir%
 cd %cmakebuilddir%
 
 set staticcrtoverride=
-if "%staticcrt%"=="true" set staticcrtoverride=-DCMAKE_USER_MAKE_RULES_OVERRIDE=cmake\vcruntime.cmake
+if "%staticcrt%"=="true" (
+  set staticcrtoverride=-DCMAKE_USER_MAKE_RULES_OVERRIDE=cmake\vcruntime.cmake
+) else (
+  set staticcrtoverride=-DCMAKE_USER_MAKE_RULES_OVERRIDE=
+)
 
 echo ========================================
 echo %cd%$ cmake -A %arch% -DBUILD_DLL=%dll% %staticcrtoverride% ..\..\..

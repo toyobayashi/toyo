@@ -21,4 +21,4 @@ before_install:
 script:
   - cmake --version
   - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat; else ./build.sh; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/toyotest.exe; else ./build/"$PLATFORM_NAME"/Release/toyotest; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/test.exe; else ./build/"$PLATFORM_NAME"/Release/test; fi
