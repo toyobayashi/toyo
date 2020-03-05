@@ -21,17 +21,17 @@ cd ../../..
 
 if [ "$type" == "Release" ]; then
   headerout="dist/include/toyo"
-  mkdir -p "$headerout"
-  mkdir -p "dist/$os/lib"
-  mkdir -p "dist/$os/bin"
-  cp ./include/* "$headerout"
-  cp ./build/"$os"/Release/*.a "dist/$os/lib"
-  cp ./build/"$os"/Release/{*.so,*.dylib} "dist/$os/bin"
-
   src_dir="./build/$os/Release"
   dest_dir="dist/$os/bin"
-  for f in `find build/$os/Release -maxdepth 1 -type f -regex ".*/[^.]+$" | grep -v Makefile`;
+  mkdir -p "$headerout"
+  mkdir -p "dist/$os/lib"
+  mkdir -p $dest_dir
+  cp ./include/* "$headerout"
+  cp "$src_dir"/*.a "dist/$os/lib"
+  cp "$src_dir"/{*.so,*.dylib} $dest_dir
+
+  for f in `find build/$os/Release -maxdepth 1 -type f`;
   do
-    cp $f $dest_dir;
+    if test -x $f; then cp $f $dest_dir; fi
   done
 fi
