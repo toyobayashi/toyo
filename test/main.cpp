@@ -353,21 +353,32 @@ static int test_copy() {
   }
 
   try {
-    fs::copy(path::dirname(path::__dirname()), "./tmp/build");
-    expect(fs::exists("./tmp/build"))
+    fs::mkdirs("./tmp/mkdir/a/b/c");
+    fs::write_file("./tmp/mkdir/a/b/c.txt", "1\n");
+    fs::write_file("./tmp/mkdir/a/b.txt", "1\n");
+    fs::copy("./tmp/mkdir", "./tmp/copy");
+    expect(fs::exists("./tmp/copy"))
   } catch (const std::exception& e) {
     console::error(e.what());
     return -1;
   }
 
   try {
-    fs::copy(path::dirname(path::__dirname()), "./tmp/build", true);
+    fs::copy("./tmp/mkdir", "./tmp/copy", true);
     return -1;
   } catch (const std::exception& e) {
     console::error(e.what());
-    fs::remove("./tmp");
-    expect(!fs::exists("./tmp"))
   }
+
+  try {
+    fs::copy("./tmp/mkdir", "./tmp/mkdir/subdir");
+    return -1;
+  } catch (const std::exception& e) {
+    console::error(e.what());
+  }
+
+  fs::remove("./tmp");
+
   return 0;
 }
 
@@ -471,6 +482,7 @@ int main() {
   test_console();
 
   console::log(process::env());
+  console::log(std::string("系统临时目录 tmpdir: ") + path::tmpdir());
 
   console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
   console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());

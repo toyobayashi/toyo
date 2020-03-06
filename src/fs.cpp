@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <exception>
+#include <stdexcept>
 #include <cerrno>
 #include <cstring>
 #include <cstdio>
@@ -1315,6 +1316,9 @@ void copy(const std::string& s, const std::string& d, bool fail_if_exists) {
   stats stat = fs::lstat(source);
 
   if (stat.is_directory()) {
+    if (path::relative(s, d).find("..") != 0) {
+      throw std::runtime_error(std::string("Cannot copy a directory into itself. copy \"") + s + "\" -> \"" + d + "\"");
+    }
     fs::mkdirs(dest);
     std::vector<std::string> items = fs::readdir(source);
     for (size_t i = 0; i < items.size(); i++) {

@@ -1198,6 +1198,47 @@ std::string __dirname() {
   return dirname(__filename());
 }
 
+std::string tmpdir() {
+  std::string path;
+  std::map<std::string, std::string> env = process::env();
+#ifdef _WIN32
+  if (env.find("TEMP") != env.end()) {
+    path = env["TEMP"];
+  } else if (env.find("TMP") != env.end()) {
+    path = env["TMP"];
+  } else if (env.find("SystemRoot") != env.end()) {
+    path = env["SystemRoot"] + "\\temp";
+  } else if (env.find("windir") != env.end()) {
+    path = env["windir"] + "\\temp";
+  } else {
+    path = "C:\\temp";
+  }
+
+  std::wstring wpath = toyo::charset::a2w(path);
+  if (wpath.length() > 1 && wpath[wpath.length() - 1] == L'\\' && wpath[wpath.length() - 2] != L':') {
+    wpath = toyo::string::wslice(wpath, 0, -1);
+    path = toyo::charset::w2a(wpath);
+  }
+#else
+  if (env.find("TMPDIR") != env.end()) {
+    path = env["TMPDIR"];
+  } else if (env.find("TMP") != env.end()) {
+    path = env["TMP"];
+  } else if (env.find("TEMP") != env.end()) {
+    path = env["TEMP"];
+  } else {
+    path = "/tmp";
+  }
+
+  std::wstring wpath = toyo::charset::a2w(path);
+  if (wpath.length() > 1 && wpath[wpath.length() - 1] == L'/') {
+    wpath = toyo::string::wslice(wpath, 0, -1);
+    path = toyo::charset::w2a(wpath);
+  }
+#endif
+  return path;
+}
+
 path::path(): dir_(""), root_(""), base_(""), name_(""), ext_("") {}
 
 #ifdef _WIN32
