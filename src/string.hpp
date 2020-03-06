@@ -2,6 +2,7 @@
 #define __STRING_HPP__
 
 #include <string>
+#include <vector>
 
 namespace toyo {
 
@@ -18,6 +19,9 @@ std::wstring wto_lower_case(const std::wstring& self);
 int wlast_index_of(const std::wstring& self, const std::wstring& searchValue, int fromIndex);
 
 int wlast_index_of(const std::wstring& self, const std::wstring& searchValue);
+
+std::vector<std::wstring> wsplit(const std::wstring& self);
+std::vector<std::wstring> wsplit(const std::wstring& self, const std::wstring& separator, int limit = -1);
 
 }
 

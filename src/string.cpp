@@ -100,6 +100,37 @@ int wlast_index_of(const std::wstring& self, const std::wstring& searchValue) {
   return wlast_index_of(self, searchValue, (int)self.length());
 }
 
+std::vector<std::wstring> wsplit(const std::wstring& self) {
+  return { self };
+}
+
+std::vector<std::wstring> wsplit(const std::wstring& self, const std::wstring& separator, int limit) {
+  std::wstring copy = self;
+  wchar_t* copyBuf = new wchar_t[copy.size() + 1];
+  memset(copyBuf, 0, (copy.size() + 1) * sizeof(wchar_t));
+  wcscpy(copyBuf, copy.c_str());
+#ifdef _MSC_VER
+  wchar_t* tokenPtr = _wcstok(copyBuf, separator.c_str());
+#else
+  wchar_t* buffer;
+  wchar_t* tokenPtr = wcstok(copyBuf, separator.c_str(), &buffer);
+#endif
+  std::vector<std::wstring> res;
+  while (tokenPtr != NULL && (limit == -1 ? true : res.size() < limit)) {
+    res.push_back(tokenPtr);
+#ifdef _MSC_VER
+    tokenPtr = _wcstok(NULL, separator.c_str());
+#else
+    tokenPtr = wcstok(NULL, separator.c_str(), &buffer);
+#endif
+  }
+  if (copyBuf[copy.size() - 1] == L'\0') {
+    res.push_back(L"");
+  }
+  delete[] copyBuf;
+  return res;
+}
+
 }
 
 }

@@ -12,12 +12,20 @@
 #else
 #include <unistd.h>
 #include <dlfcn.h>
+#include <dirent.h>
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
+extern char** environ;
+#endif
 #endif
 
 #include <cstdlib>
 
 #include "process.hpp"
 #include "charset.hpp"
+#include "string.hpp"
 
 namespace toyo {
 
@@ -87,6 +95,38 @@ void* dlsym(void* handle, const std::string& name) {
 }
 std::string dlerror() {
   return ::dlerror();
+}
+
+std::map<std::string, std::string> env() {
+  static std::map<std::string, std::string> _env;
+  if (_env.size() == 0) {
+#ifdef _WIN32
+    wchar_t* environment = GetEnvironmentStringsW();
+    if (environment == nullptr) return _env;
+    wchar_t* p = environment;
+    while (*p) {
+      if (*p == L'=') {
+        p += wcslen(p) + 1;
+        continue;
+      }
+      std::wstring e = p;
+      std::vector<std::wstring> keyvalue = toyo::string::wsplit(e, L"=");
+      _env[toyo::charset::w2a(keyvalue[0])] = toyo::charset::w2a(keyvalue[1]);
+
+      p += wcslen(p) + 1;
+    }
+    FreeEnvironmentStringsW(environment);
+#else
+    int env_size = 0;
+    while (environ[env_size]) {
+      std::wstring e = toyo::charset::a2w(environ[env_size]);
+      std::vector<std::wstring> keyvalue = toyo::string::wsplit(e, L"=");
+      _env[toyo::charset::w2a(keyvalue[0])] = toyo::charset::w2a(keyvalue[1]);
+      env_size++;
+    }
+#endif
+  }
+  return _env;
 }
 
 } // process

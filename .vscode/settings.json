@@ -69,7 +69,9 @@
     "string_view": "cpp",
     "sstream": "cpp",
     "cerrno": "cpp",
-    "wchar.h": "c"
+    "wchar.h": "c",
+    "map": "cpp",
+    "xtree": "cpp"
   },
   "wslProjectRoot": "/mnt/c/Projects/cpp/toyo"
 }

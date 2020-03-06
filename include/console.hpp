@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <iostream>
 #include "charset.hpp"
 
@@ -42,6 +43,8 @@ private:
   static std::string _format(const std::vector<std::string>&);
 
   static std::string _format(const std::string&);
+
+  static std::string _format(const std::map<std::string, std::string>&);
 
   template <typename T>
   static std::string _format(const std::vector<T>& arr) {

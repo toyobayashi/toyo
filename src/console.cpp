@@ -58,6 +58,28 @@ std::string console::_format(const std::vector<std::string>& arr) {
   return oss.str();
 }
 
+std::string console::_format(const std::map<std::string, std::string>& strobj) {
+  size_t len = strobj.size();
+  std::ostringstream oss;
+  if (len == 0) {
+    oss << "{}";
+    return oss.str();
+  }
+  oss << "{\n";
+  size_t i = 0;
+  for (auto& p : strobj) {
+    oss << charset::a2ocp(std::string("  \"") + p.first + "\": \"" + p.second + "\"");
+    if (i != len - 1) {
+      oss << ",\n";
+    } else {
+      oss << "\n";
+    }
+    i++;
+  }
+  oss << "}";
+  return oss.str();
+}
+
 std::string console::_format(const std::string& str) {
   return charset::a2ocp(str);
 }

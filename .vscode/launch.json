@@ -22,7 +22,7 @@
         ""
       ],
       "stopAtEntry": false,
-      "cwd": "${config:wslProjectRoot}/build/linux/Debug",
+      "cwd": "${config:wslProjectRoot}",
       "environment": [],
       "externalConsole": false,
       "MIMode": "gdb",
@@ -45,7 +45,7 @@
         ""
       ],
       "stopAtEntry": false,
-      "cwd": "${config:wslProjectRoot}/build/linux/Debug/",
+      "cwd": "${config:wslProjectRoot}",
       "environment": [],
       "externalConsole": false,
       "windows": {
