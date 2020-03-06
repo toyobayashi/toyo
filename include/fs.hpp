@@ -171,6 +171,8 @@ void remove(const std::string&);
 void symlink(const std::string&, const std::string&);
 void symlink(const std::string&, const std::string&, symlink_type);
 void copy_file(const std::string&, const std::string&, bool fail_if_exists = false);
+void copy(const std::string&, const std::string&, bool fail_if_exists = false);
+void move(const std::string&, const std::string&);
 std::vector<unsigned char> read_file(const std::string&);
 std::string read_file_to_string(const std::string&);
 void write_file(const std::string&, const std::vector<unsigned char>&);

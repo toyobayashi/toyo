@@ -30,7 +30,7 @@ if [ "$type" == "Release" ]; then
   cp "$src_dir"/*.a "dist/$os/lib"
   cp "$src_dir"/{*.so,*.dylib} $dest_dir
 
-  for f in `find build/$os/Release -maxdepth 1 -type f`;
+  for f in `find $src_dir -maxdepth 1 -type f`;
   do
     if test -x $f; then cp $f $dest_dir; fi
   done

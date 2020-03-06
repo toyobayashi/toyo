@@ -1304,6 +1304,39 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
 
 }
 
+void copy(const std::string& s, const std::string& d, bool fail_if_exists) {
+  std::string source = path::resolve(s);
+  std::string dest = path::resolve(d);
+
+  if (source == dest) {
+    return;
+  }
+
+  stats stat = fs::lstat(source);
+
+  if (stat.is_directory()) {
+    fs::mkdirs(dest);
+    std::vector<std::string> items = fs::readdir(source);
+    for (size_t i = 0; i < items.size(); i++) {
+      fs::copy(path::join(source, items[i]), path::join(dest, items[i]), fail_if_exists);
+    }
+  } else {
+    fs::copy_file(source, dest, fail_if_exists);
+  }
+}
+
+void move(const std::string& s, const std::string& d) {
+  std::string source = path::resolve(s);
+  std::string dest = path::resolve(d);
+
+  if (source == dest) {
+    return;
+  }
+
+  fs::copy(source, dest);
+  fs::remove(source);
+}
+
 std::vector<unsigned char> read_file(const std::string& p) {
   std::string path = path::normalize(p);
   // if (!fs::exists(path)) {

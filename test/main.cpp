@@ -339,11 +339,34 @@ static int test_copy() {
     return -1;
   } catch (const std::exception& e) {
     console::error(e.what());
-    expect(fs::exists(d))
     fs::remove(d);
     expect(!fs::exists(d))
     fs::remove(s);
     expect(!fs::exists(s))
+  }
+
+  try {
+    fs::copy("notexist", "any");
+    return -1;
+  } catch (const std::exception& e) {
+    console::error(e.what());
+  }
+
+  try {
+    fs::copy(path::dirname(path::__dirname()), "./tmp/build");
+    expect(fs::exists("./tmp/build"))
+  } catch (const std::exception& e) {
+    console::error(e.what());
+    return -1;
+  }
+
+  try {
+    fs::copy(path::dirname(path::__dirname()), "./tmp/build", true);
+    return -1;
+  } catch (const std::exception& e) {
+    console::error(e.what());
+    fs::remove("./tmp");
+    expect(!fs::exists("./tmp"))
   }
   return 0;
 }
