@@ -1202,13 +1202,13 @@ std::string tmpdir() {
   std::string path;
   std::map<std::string, std::string> env = process::env();
 #ifdef _WIN32
-  if (env.find("TEMP") != env.end()) {
+  if (env.find("TEMP") != env.end() && env["TEMP"] != "") {
     path = env["TEMP"];
-  } else if (env.find("TMP") != env.end()) {
+  } else if (env.find("TMP") != env.end() && env["TMP"] != "") {
     path = env["TMP"];
-  } else if (env.find("SystemRoot") != env.end()) {
+  } else if (env.find("SystemRoot") != env.end() && env["SystemRoot"] != "") {
     path = env["SystemRoot"] + "\\temp";
-  } else if (env.find("windir") != env.end()) {
+  } else if (env.find("windir") != env.end() && env["windir"] != "") {
     path = env["windir"] + "\\temp";
   } else {
     path = "C:\\temp";
@@ -1220,11 +1220,11 @@ std::string tmpdir() {
     path = toyo::charset::w2a(wpath);
   }
 #else
-  if (env.find("TMPDIR") != env.end()) {
+  if (env.find("TMPDIR") != env.end() && env["TMPDIR"] != "") {
     path = env["TMPDIR"];
-  } else if (env.find("TMP") != env.end()) {
+  } else if (env.find("TMP") != env.end() && env["TMP"] != "") {
     path = env["TMP"];
-  } else if (env.find("TEMP") != env.end()) {
+  } else if (env.find("TEMP") != env.end() && env["TEMP"] != "") {
     path = env["TEMP"];
   } else {
     path = "/tmp";
