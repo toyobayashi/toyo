@@ -19,6 +19,6 @@
   },
   "dependencies": {
     "@ccpm/dep-paths": "^1.0.0",
-    "@ccpm/oid": "^1.0.2"
+    "@ccpm/oid": "^1.0.3"
   }
 }
