@@ -1,17 +1,13 @@
 #include <iostream>
 #include <cstring>
-#include "charset.hpp"
-#include "process.hpp"
-#include "path.hpp"
-#include "fs.hpp"
-// #include "oid.h"
-#include "console.hpp"
+#include "toyo/charset.hpp"
+#include "toyo/process.hpp"
+#include "toyo/path.hpp"
+#include "toyo/fs.hpp"
+#include "toyo/console.hpp"
+#include "oid/oid.hpp"
 
-#include "mocha.h"
-
-typedef struct object_id {
-  unsigned char id[12];
-} object_id;
+#include "cmocha/cmocha.h"
 
 using namespace toyo;
 
@@ -255,24 +251,7 @@ static int test_mkdirs() {
     return -1;
   }
 
-#ifdef _WIN32
-  void* dll = process::dlopen(path::join(path::__dirname(), "oid.dll"));
-#elif defined(__APPLE__)
-  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.dylib"));
-#else
-  void* dll = process::dlopen(path::join(path::__dirname(), "liboid.so"));
-#endif
-
-  int (*construct)(object_id*) = (int (*)(object_id*))process::dlsym(dll, "oid_construct");
-  int (*to_hex)(const object_id*, char*) = (int (*)(const object_id*, char*))process::dlsym(dll, "oid_to_hex_string");
-
-  object_id oid;
-  construct(&oid);
-  char hex[25] = { 0 };
-  to_hex(&oid, hex);
-  console::log(hex);
-
-  std::string mkdir1 = std::string("mkdir_") + process::platform() + "_" + hex;
+  std::string mkdir1 = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
   try {
     fs::mkdirs(mkdir1);
     expect(fs::exists(mkdir1));
@@ -282,15 +261,7 @@ static int test_mkdirs() {
     return -1;
   }
 
-  object_id oid2;
-  construct(&oid2);
-  char hex2[25] = { 0 };
-  to_hex(&oid2, hex2);
-  console::log(hex2);
-
-  process::dlclose(dll);
-
-  std::string root = std::string("mkdir_") + process::platform() + "_" + hex2;
+  std::string root = std::string("mkdir_") + process::platform() + "_" + ObjectId().toHexString();
   std::string mkdir2 = path::join(root, "subdir/a/b/c");
   try {
     fs::mkdirs(mkdir2);

@@ -1,16 +1,12 @@
-# file(GLOB_RECURSE TEST_SOURCE_FILES "test/*.c" "test/*.cpp")
-
-set(TEST_EXE_NAME test)
+file(GLOB_RECURSE TEST_SOURCE_FILES "test/*.c" "test/*.cpp")
 
 add_executable(${TEST_EXE_NAME}
-  # ${TEST_SOURCE_FILES}
-  "test/main.cpp"
-  "test/mocha.c"
+  ${TEST_SOURCE_FILES}
 )
 
 set_target_properties(${TEST_EXE_NAME} PROPERTIES CXX_STANDARD 11)
 
-target_link_libraries(${TEST_EXE_NAME} toyo)
+target_link_libraries(${TEST_EXE_NAME} ${LIB_NAME})
 
 if(WIN32 AND MSVC)
   set_directory_properties(PROPERTIES VS_STARTUP_PROJECT ${TEST_EXE_NAME})

@@ -16,9 +16,9 @@
 #include <mach-o/dyld.h>
 #endif
 
-#include "path.hpp"
-#include "charset.hpp"
-#include "process.hpp"
+#include "toyo/path.hpp"
+#include "toyo/charset.hpp"
+#include "toyo/process.hpp"
 #include "string.hpp"
 
 namespace toyo {

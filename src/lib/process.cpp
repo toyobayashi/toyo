@@ -23,8 +23,8 @@ extern char** environ;
 
 #include <cstdlib>
 
-#include "process.hpp"
-#include "charset.hpp"
+#include "toyo/process.hpp"
+#include "toyo/charset.hpp"
 #include "string.hpp"
 
 namespace toyo {

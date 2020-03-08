@@ -17,9 +17,9 @@
 #include <cstdio>
 #include <cstddef>
 
-#include "fs.hpp"
-#include "path.hpp"
-#include "charset.hpp"
+#include "toyo/fs.hpp"
+#include "toyo/path.hpp"
+#include "toyo/charset.hpp"
 #include "cerror.hpp"
 
 #define TOYO_FS_BUFFER_SIZE 128 * 1024

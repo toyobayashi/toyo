@@ -1,7 +1,7 @@
 #include <cstddef>
 #include <cstring>
 
-#include "charset.hpp"
+#include "toyo/charset.hpp"
 #include "string.hpp"
 
 namespace toyo {
@@ -116,7 +116,7 @@ std::vector<std::wstring> wsplit(const std::wstring& self, const std::wstring& s
   wchar_t* tokenPtr = wcstok(copyBuf, separator.c_str(), &buffer);
 #endif
   std::vector<std::wstring> res;
-  while (tokenPtr != NULL && (limit == -1 ? true : res.size() < limit)) {
+  while (tokenPtr != NULL && (limit == -1 ? true : ((int)res.size()) < limit)) {
     res.push_back(tokenPtr);
 #ifdef _MSC_VER
     tokenPtr = _wcstok(NULL, separator.c_str());

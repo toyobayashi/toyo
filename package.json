@@ -1,0 +1,24 @@
+{
+  "name": "@ccpm/toyo",
+  "version": "1.0.0",
+  "description": "C++ api like nodejs.",
+  "main": "index.js",
+  "author": "toyobayashi",
+  "license": "MIT",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toyobayashi/toyo.git"
+  },
+  "homepage": "https://github.com/toyobayashi/toyo#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@ccpm/cmocha": "^1.0.2"
+  },
+  "dependencies": {
+    "@ccpm/dep-paths": "^1.0.0",
+    "@ccpm/oid": "^1.0.1"
+  }
+}

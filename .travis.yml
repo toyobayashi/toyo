@@ -1,4 +1,4 @@
-language: cpp
+language: node_js
 
 # os:
   # - windows
@@ -18,7 +18,9 @@ matrix:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" != "windows" ]; then chmod +x ./build.sh; fi
+install:
+  - npm install
 script:
   - cmake --version
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat; else ./build.sh; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/test.exe; else ./build/"$PLATFORM_NAME"/Release/test; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build.bat static test; else ./build.sh test; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then ./build/win/x64/Release/toyotest.exe; else ./build/"$PLATFORM_NAME"/Release/toyotest; fi
