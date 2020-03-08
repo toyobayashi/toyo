@@ -14,11 +14,9 @@
   "publishConfig": {
     "access": "public"
   },
-  "devDependencies": {
-    "@ccpm/cmocha": "^1.0.2"
-  },
   "dependencies": {
-    "@ccpm/dep-paths": "^1.0.0",
-    "@ccpm/oid": "^1.0.3"
+    "@ccpm/cmocha": "^1.0.2",
+    "@ccpm/dep-paths": "^1.0.1",
+    "@ccpm/oid": "^1.0.4"
   }
 }
