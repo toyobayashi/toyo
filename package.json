@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@ccpm/cmocha": "^1.0.2",
-    "@ccpm/dep-paths": "^1.0.1",
-    "@ccpm/oid": "^1.0.4"
+    "@ccpm/dep-paths": "^1.1.0",
+    "@ccpm/oid": "^1.0.5"
   }
 }
