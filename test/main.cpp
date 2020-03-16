@@ -217,6 +217,7 @@ static int test_stat() {
     fs::remove("slk3");
     expect(!fs::exists("slk3"))
     fs::symlink(path::__filename(), "slk");
+    console::log(fs::realpath("slk"));
     expect(fs::exists("slk"))
     fs::stats stat = fs::stat("slk");
     fs::stats stat2 = fs::lstat("slk");

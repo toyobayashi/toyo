@@ -170,6 +170,7 @@ void rename(const std::string&, const std::string&);
 void remove(const std::string&);
 void symlink(const std::string&, const std::string&);
 void symlink(const std::string&, const std::string&, symlink_type);
+std::string realpath(const std::string&);
 void copy_file(const std::string&, const std::string&, bool fail_if_exists = false);
 void copy(const std::string&, const std::string&, bool fail_if_exists = false);
 void move(const std::string&, const std::string&);

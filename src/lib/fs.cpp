@@ -1266,6 +1266,112 @@ void symlink(const std::string& o, const std::string& n, symlink_type type) {
 #endif
 }
 
+std::string realpath(const std::string& p) {
+  std::string path = path::normalize(p);
+#ifdef _WIN32
+  HANDLE handle;
+
+  handle = CreateFileW(toyo::charset::a2w(path).c_str(),
+                       0,
+                       0,
+                       NULL,
+                       OPEN_EXISTING,
+                       FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS,
+                       NULL);
+  if (handle == INVALID_HANDLE_VALUE) {
+    throw std::runtime_error(get_win32_last_error_message() + " realpath \"" + p + "\"");
+  }
+
+  DWORD w_realpath_len;
+  WCHAR* w_realpath_ptr = NULL;
+  WCHAR* w_realpath_buf;
+
+  w_realpath_len = GetFinalPathNameByHandleW(handle, NULL, 0, VOLUME_NAME_DOS);
+  if (w_realpath_len == 0) {
+    throw std::runtime_error(get_win32_last_error_message() + " realpath \"" + p + "\"");
+  }
+
+  w_realpath_buf = (WCHAR*)malloc((w_realpath_len + 1) * sizeof(WCHAR));
+  if (w_realpath_buf == NULL) {
+    SetLastError(ERROR_OUTOFMEMORY);
+    throw std::runtime_error(get_win32_last_error_message() + " realpath \"" + p + "\"");
+  }
+  w_realpath_ptr = w_realpath_buf;
+
+  if (GetFinalPathNameByHandleW(
+          handle, w_realpath_ptr, w_realpath_len, VOLUME_NAME_DOS) == 0) {
+    free(w_realpath_buf);
+    SetLastError(ERROR_INVALID_HANDLE);
+    throw std::runtime_error(get_win32_last_error_message() + " realpath \"" + p + "\"");
+  }
+
+  /* convert UNC path to long path */
+  if (wcsncmp(w_realpath_ptr,
+              L"\\\\?\\UNC\\",
+              8) == 0) {
+    w_realpath_ptr += 6;
+    *w_realpath_ptr = L'\\';
+    w_realpath_len -= 6;
+  } else if (wcsncmp(w_realpath_ptr,
+                      LONG_PATH_PREFIX,
+                      LONG_PATH_PREFIX_LEN) == 0) {
+    w_realpath_ptr += 4;
+    w_realpath_len -= 4;
+  } else {
+    free(w_realpath_buf);
+    SetLastError(ERROR_INVALID_HANDLE);
+    throw std::runtime_error(get_win32_last_error_message() + " realpath \"" + p + "\"");
+  }
+
+  std::string res;
+  try {
+    res = toyo::charset::w2a(w_realpath_ptr);
+  } catch (const std::exception& e) {
+    free(w_realpath_buf);
+    CloseHandle(handle);
+    throw std::runtime_error(std::string(e.what()) + " realpath \"" + p + "\"");
+  }
+
+  free(w_realpath_buf);
+  return res;
+#else
+  char* buf = nullptr;
+
+#if defined(_POSIX_VERSION) && _POSIX_VERSION >= 200809L
+  buf = ::realpath(path.c_str(), nullptr);
+  if (buf == nullptr)
+    throw cerror(errno, "realpath \"" + p + "\"");
+  return buf;
+#else
+  ssize_t len;
+
+  ssize_t pathmax;
+
+  pathmax = pathconf(path.c_str(), _PC_PATH_MAX);
+
+  if (pathmax == -1)
+    pathmax = UV__PATH_MAX;
+
+  len =  pathmax;
+
+  buf = (char*)malloc(len + 1);
+
+  if (buf == nullptr) {
+    errno = ENOMEM;
+    throw cerror(errno, "realpath \"" + p + "\"");
+  }
+
+  if (realpath(path.c_str(), buf) == NULL) {
+    free(buf);
+    throw cerror(errno, "realpath \"" + p + "\"");
+  }
+  std::string res = buf;
+  free(buf);
+  return res;
+#endif
+#endif
+}
+
 void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) {
   std::string source = path::resolve(s);
   std::string dest = path::resolve(d);
