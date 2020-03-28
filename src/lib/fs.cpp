@@ -24,6 +24,10 @@
 
 #define TOYO_FS_BUFFER_SIZE 128 * 1024
 
+#ifndef _WIN32
+#define TOYO__PATH_MAX 8192
+#endif
+
 #ifdef _WIN32
 static int file_symlink_usermode_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 
@@ -1350,7 +1354,7 @@ std::string realpath(const std::string& p) {
   pathmax = pathconf(path.c_str(), _PC_PATH_MAX);
 
   if (pathmax == -1)
-    pathmax = UV__PATH_MAX;
+    pathmax = TOYO__PATH_MAX;
 
   len =  pathmax;
 
@@ -1361,7 +1365,7 @@ std::string realpath(const std::string& p) {
     throw cerror(errno, "realpath \"" + p + "\"");
   }
 
-  if (realpath(path.c_str(), buf) == NULL) {
+  if (::realpath(path.c_str(), buf) == NULL) {
     free(buf);
     throw cerror(errno, "realpath \"" + p + "\"");
   }

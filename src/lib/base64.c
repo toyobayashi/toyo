@@ -107,7 +107,7 @@ static int base64_decode_group_slow(char* const dst, const size_t dstlen,
   if (*k >= dstlen)                                                           \
     return 0;                                                                 \
   hi = lo;
-  V(0);
+  V((void)0);
   V(dst[(*k)++] = ((hi & 0x3F) << 2) | ((lo & 0x30) >> 4));
   V(dst[(*k)++] = ((hi & 0x0F) << 4) | ((lo & 0x3C) >> 2));
   V(dst[(*k)++] = ((hi & 0x03) << 6) | ((lo & 0x3F) >> 0));
@@ -166,7 +166,7 @@ size_t base64_decode(const char* src, size_t len, unsigned char* dst) {
         unbase64_table[src[i + 3]];
     // If MSB is set, input contains whitespace or is not valid base64.
     if (v & 0x80808080) {
-      if (!base64_decode_group_slow(dst, dlen, src, slen, &i, &k))
+      if (!base64_decode_group_slow((char*)dst, dlen, src, slen, &i, &k))
         return k;
       max_i = i + (slen - i) / 4 * 4;  // Align max_i again.
     } else {
@@ -178,7 +178,7 @@ size_t base64_decode(const char* src, size_t len, unsigned char* dst) {
     }
   }
   if (i < slen && k < dlen) {
-    base64_decode_group_slow(dst, dlen, src, slen, &i, &k);
+    base64_decode_group_slow((char*)dst, dlen, src, slen, &i, &k);
   }
   return k;
 }
