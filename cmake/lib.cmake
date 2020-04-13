@@ -9,7 +9,7 @@ set_target_properties(${LIB_NAME} PROPERTIES CXX_STANDARD 11)
 # set_target_properties(${LIB_NAME} PROPERTIES PREFIX "lib")
 
 if(WIN32 AND MSVC)
-  target_link_libraries(${CMAKE_PROJECT_NAME} ntdll)
+  target_link_libraries(${LIB_NAME} ntdll)
   # set_target_properties(${LIB_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   target_compile_options(${LIB_NAME} PRIVATE /utf-8)
   target_compile_definitions(${LIB_NAME} PRIVATE
@@ -18,7 +18,7 @@ if(WIN32 AND MSVC)
     _UNICODE
   )
 else()
-  target_link_libraries(${CMAKE_PROJECT_NAME} dl)
+  target_link_libraries(${LIB_NAME} dl)
 endif()
 
 target_include_directories(${LIB_NAME}
