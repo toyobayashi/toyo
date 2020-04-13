@@ -1,5 +1,5 @@
-#ifndef __BASE64_HPP__
-#define __BASE64_HPP__
+#ifndef __TOYO_BASE64_H__
+#define __TOYO_BASE64_H__
 
 #include <stddef.h>
 

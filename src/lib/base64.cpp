@@ -1,5 +1,5 @@
+#include "toyo/util/base64.h"
 #include "toyo/util.hpp"
-#include "base64.h"
 
 namespace toyo {
 
@@ -45,5 +45,4 @@ namespace util {
     return res;
   }
 }
-
 }
