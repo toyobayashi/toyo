@@ -1,6 +1,6 @@
 #ifdef _WIN32
 
-#include <exception>
+#include <stdexcept>
 #include "winerr.hpp"
 #include "toyo/charset.hpp"
 
@@ -27,7 +27,7 @@ std::string get_win32_error_message(DWORD code) {
   } else {
     char buf[10] = { 0 };
     _itoa(GetLastError(), buf, 10);
-    throw std::exception((std::string("Cannot format message. Win32 error code: ") + buf).c_str());
+    throw std::runtime_error((std::string("Cannot format message. Win32 error code: ") + buf).c_str());
   }
 }
 

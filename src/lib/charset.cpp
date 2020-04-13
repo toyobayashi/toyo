@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstddef>
+#include <stdexcept>
 
 #include "toyo/charset.hpp"
 
@@ -14,7 +15,7 @@ namespace charset {
 std::wstring a2w(const std::string& str) {
   /*int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
   if (len == -1) {
-    throw std::exception("Convert failed.");
+    throw std::runtime_error("Convert failed.");
   }
   wchar_t* buf = new wchar_t[len];
   MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buf, len);
@@ -46,7 +47,7 @@ std::wstring a2w(const std::string& str) {
 std::string w2a(const std::wstring& wstr) {
   /*int len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
   if (len == -1) {
-    throw std::exception("Convert failed.");
+    throw std::runtime_error("Convert failed.");
   }
   char* buf = new char[len];
   WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, buf, len, NULL, NULL);
@@ -78,7 +79,7 @@ static std::string _w2a(const std::wstring& wstr, int code_page) {
 #ifdef _WIN32
   int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
   if (len == -1) {
-    throw std::exception(get_win32_last_error_message().c_str());
+    throw std::runtime_error(get_win32_last_error_message().c_str());
   }
   char* buf = new char[len];
   memset(buf, 0, len * sizeof(char));
