@@ -300,10 +300,12 @@ inline void console::log(const std::string& arg) {
 
 inline void console::write(const char* arg) {
   std::cout << _format(arg);
+  fflush(stdout);
 }
 
 inline void console::write(const std::string& arg) {
   std::cout << _format(arg);
+  fflush(stdout);
 }
 
 inline void console::clear() {
@@ -364,9 +366,9 @@ inline void console::clear_line(short lineNumber) {
   SetConsoleCursorPosition(_consoleHandle, targetFirstCellPosition);
 #else
   for (short i = 0; i < lineNumber; i++) {
-    std::cout << "\x1b[666D\x1b[0K\x1b[1A";
+    std::cout << "\r\x1b[k\x1b[1A";
   }
-  std::cout << "\x1b[666D\x1b[0K";
+  std::cout << "\r\x1b[k";
 #endif
 }
 
