@@ -150,6 +150,7 @@ std::string relative(const std::string&, const std::string&);
 std::string __filename();
 std::string __dirname();
 std::string tmpdir();
+std::string homedir();
 
 } // path
 

@@ -9,7 +9,7 @@ set_target_properties(${LIB_NAME} PROPERTIES CXX_STANDARD 11)
 # set_target_properties(${LIB_NAME} PROPERTIES PREFIX "lib")
 
 if(WIN32 AND MSVC)
-  target_link_libraries(${LIB_NAME} ntdll)
+  target_link_libraries(${LIB_NAME} ntdll Userenv)
   # set_target_properties(${LIB_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   target_compile_options(${LIB_NAME} PRIVATE /utf-8)
   target_compile_definitions(${LIB_NAME} PRIVATE

@@ -3,13 +3,25 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#include <userenv.h>
+#include "winerr.hpp"
 #endif
 
 #include <vector>
 #include <cstddef>
+#include <cstdlib>
+#include <stdexcept>
 
 #ifndef _WIN32
+
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+
+#if defined(__ANDROID_API__) && __ANDROID_API__ < 21
+# include <dlfcn.h>  /* for dlsym */
+#endif
+
 #endif
 
 #ifdef __APPLE__
@@ -19,6 +31,8 @@
 #include "toyo/path.hpp"
 #include "toyo/charset.hpp"
 #include "toyo/process.hpp"
+#include <cerrno>
+#include "cerror.hpp"
 #include "string.hpp"
 
 namespace toyo {
@@ -1237,6 +1251,87 @@ std::string tmpdir() {
   }
 #endif
   return path;
+}
+
+std::string homedir() {
+  std::map<std::string, std::string> env = process::env();
+#ifdef _WIN32
+
+  if (env.find("USERPROFILE") != env.end()) {
+    return env.at("USERPROFILE");
+  }
+
+  HANDLE token;
+  if (OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &token) == 0) {
+    throw std::runtime_error(get_win32_last_error_message());
+  }
+  
+  wchar_t path[MAX_PATH];
+  DWORD bufsize = sizeof(path) / sizeof(path[0]);
+
+  if (!GetUserProfileDirectoryW(token, path, &bufsize)) {
+    CloseHandle(token);
+    throw std::runtime_error(get_win32_last_error_message());
+  }
+
+  CloseHandle(token);
+
+  return toyo::charset::w2a(path);
+#else
+  if (env.find("HOME") != env.end()) {
+    return env.at("HOME");
+  }
+
+  struct passwd pw;
+  struct passwd* result;
+  std::size_t bufsize;
+#if defined(__ANDROID_API__) && __ANDROID_API__ < 21
+  int (*getpwuid_r)(uid_t, struct passwd*, char*, size_t, struct passwd**);
+
+  getpwuid_r = dlsym(RTLD_DEFAULT, "getpwuid_r");
+  if (getpwuid_r == NULL) {
+    throw std::runtime_error("Can not call getpwuid_r.");
+  }
+#endif
+  long initsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+
+  if (initsize <= 0)
+    bufsize = 4096;
+  else
+    bufsize = (size_t) initsize;
+
+  uid_t uid = geteuid();
+  char* buf = (char*)malloc(bufsize);
+  int r;
+  
+  for (;;) {
+    free(buf);
+    buf = (char*)malloc(bufsize);
+
+    if (buf == NULL) {
+      throw cerror(errno);
+    }
+
+    r = getpwuid_r(uid, &pw, buf, bufsize, &result);
+
+    if (r != ERANGE)
+      break;
+
+    bufsize *= 2;
+  }
+
+  if (r != 0) {
+    free(buf);
+    throw std::runtime_error("getpwuid_r() failed.");
+  }
+
+  if (result == NULL) {
+    free(buf);
+    throw cerror(ENOENT);
+  }
+
+  return pw.pw_dir;
+#endif
 }
 
 path::path(): dir_(""), root_(""), base_(""), name_(""), ext_("") {}

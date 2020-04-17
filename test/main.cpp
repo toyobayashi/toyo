@@ -455,6 +455,7 @@ int main() {
 
   console::log(process::env());
   console::log(std::string("系统临时目录 tmpdir: ") + path::tmpdir());
+  console::log(std::string("家 homedir: ") + path::homedir());
 
   console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
   console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
