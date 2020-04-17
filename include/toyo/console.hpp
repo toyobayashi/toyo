@@ -142,11 +142,13 @@ public:
   template <typename... Args>
   static void write(const std::string& format, Args... args) {
     printf(a2ocp(format).c_str(), args...);
+    fflush(stdout);
   }
 
   template <typename T>
   static void write(const T& arg) {
     std::cout << _format(arg);
+    fflush(stdout);
   }
 
   static void log(const char* arg);
@@ -175,6 +177,7 @@ public:
     std::cout << COLOR_GREEN_BRIGHT;
     log(arg);
     std::cout << COLOR_RESET;
+    fflush(stdout);
 #endif
   }
 
@@ -189,6 +192,7 @@ public:
     std::cerr << COLOR_YELLOW_BRIGHT;
     _logerror(arg);
     std::cerr << COLOR_RESET;
+    fflush(stderr);
 #endif
   }
 
@@ -203,6 +207,7 @@ public:
     std::cerr << COLOR_RED_BRIGHT;
     _logerror(arg);
     std::cerr << COLOR_RESET;
+    fflush(stderr);
 #endif
   }
 
@@ -347,6 +352,7 @@ inline void console::clear() {
   SetConsoleCursorPosition(_consoleHandle, coordScreen);
 #else
   std::cout << "\033[2J\033[1;1H";
+  fflush(stdout);
 #endif
 }
 
@@ -369,6 +375,7 @@ inline void console::clear_line(short lineNumber) {
     std::cout << "\r\x1b[k\x1b[1A";
   }
   std::cout << "\r\x1b[k";
+  fflush(stdout);
 #endif
 }
 
