@@ -1392,6 +1392,7 @@ std::string realpath(const std::string& p) {
 void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) {
   std::string source = path::resolve(s);
   std::string dest = path::resolve(d);
+  std::string errmessage = "copy \"" + s + "\" -> \"" + d + "\"";
 
   if (source == dest) {
     return;
@@ -1404,17 +1405,24 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
 #else
 
   if (fail_if_exists && fs::exists(dest)) {
-    throw cerror(EEXIST, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(EEXIST, errmessage);
+  }
+
+  int mode;
+  try {
+    mode = fs::stat(source).mode;
+  } catch (const std::exception&) {
+    throw cerror(errno, errmessage);
   }
 
   FILE* sf = ::fopen(source.c_str(), "rb+");
   if (!sf) {
-    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(errno, errmessage);
   }
   FILE* df = ::fopen(dest.c_str(), "wb+");
   if (!df) {
     ::fclose(sf);
-    throw cerror(errno, "copy \"" + s + "\" -> \"" + d + "\"");
+    throw cerror(errno, errmessage);
   }
   unsigned char buf[TOYO_FS_BUFFER_SIZE];
   size_t read;
@@ -1424,6 +1432,8 @@ void copy_file(const std::string& s, const std::string& d, bool fail_if_exists) 
   }
   ::fclose(sf);
   ::fclose(df);
+
+  fs::chmod(dest, mode);
 #endif
 
 }
