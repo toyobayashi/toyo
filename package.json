@@ -1,6 +1,6 @@
 {
   "name": "@ccpm/toyo",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "C++ api like nodejs.",
   "main": "index.js",
   "author": "toyobayashi",
