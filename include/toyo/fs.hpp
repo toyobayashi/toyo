@@ -159,6 +159,7 @@ public:
 fs::dir opendir(const std::string&);
 std::vector<std::string> readdir(const std::string&);
 void access(const std::string&, int mode = 0);
+void chmod(const std::string&, int mode);
 bool exists(const std::string&);
 stats stat(const std::string&);
 stats lstat(const std::string&);

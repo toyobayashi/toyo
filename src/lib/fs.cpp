@@ -1007,6 +1007,19 @@ void access(const std::string& p, int mode) {
 #endif
 }
 
+void chmod(const std::string& p, int mode) {
+  std::string npath = path::normalize(p);
+#ifdef _WIN32
+  if (::_wchmod(toyo::charset::a2w(npath).c_str(), mode) != 0) {
+    throw cerror(errno, "chmod \"" + p + "\"");
+  }
+#else
+  if (::chmod(npath.c_str(), mode) != 0) {
+    throw cerror(errno, "chmod \"" + p + "\"");
+  }
+#endif
+}
+
 bool exists(const std::string& p) {
   try {
     fs::access(p, f_ok);
