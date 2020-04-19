@@ -1624,6 +1624,76 @@ bool path::operator==(const path& other) {
     && other.ext_ == this->ext_);
 }
 
+env_paths::env_paths(const std::string& name):
+  data(""),
+  config(""),
+  cache(""),
+  log(""),
+  temp("") {
+  auto env = process::env();
+  auto homedir = toyo::path::homedir();
+  auto tmpdir = toyo::path::tmpdir();
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+  std::string appdata;
+  std::string local_appdata;
+  if (env.find("APPDATA") != env.end() && env.at("APPDATA") != "") {
+    appdata = env.at("APPDATA");
+  } else {
+    appdata = toyo::path::win32::join(homedir, "AppData", "Roaming");
+  }
+
+  if (env.find("LOCALAPPDATA") != env.end() && env.at("LOCALAPPDATA") != "") {
+    local_appdata = env.at("LOCALAPPDATA");
+  } else {
+    local_appdata = toyo::path::win32::join(homedir, "AppData", "Local");
+  }
+
+  this->data = toyo::path::win32::join(local_appdata, name, "Data");
+  this->config = toyo::path::win32::join(appdata, name, "Config");
+  this->cache = toyo::path::win32::join(local_appdata, name, "Cache");
+  this->log = toyo::path::win32::join(local_appdata, name, "Log");
+  this->temp = toyo::path::win32::join(tmpdir, name);
+#elif defined(__APPLE__)
+  auto library = toyo::path::posix::join(homedir, "Library");
+
+  this->data = toyo::path::posix::join(library, "Application Support", name);
+  this->config = toyo::path::posix::join(library, "Preferences", name);
+  this->cache = toyo::path::posix::join(library, "Caches", name);
+  this->log = toyo::path::posix::join(library, "Logs", name);
+  this->temp = toyo::path::posix::join(tmpdir, name);
+#elif defined(__linux__) || defined(__linux)
+  auto username = toyo::path::posix::basename(homedir);
+
+  this->data = toyo::path::posix::join(
+    (env.find("XDG_DATA_HOME") != env.end() && env.at("XDG_DATA_HOME") != "") ? env.at("XDG_DATA_HOME") : toyo::path::posix::join(homedir, ".local/share"),
+    name);
+  this->config = toyo::path::posix::join(
+    (env.find("XDG_CONFIG_HOME") != env.end() && env.at("XDG_CONFIG_HOME") != "") ? env.at("XDG_CONFIG_HOME") : toyo::path::posix::join(homedir, ".config"),
+    name);
+  this->cache = toyo::path::posix::join(
+    (env.find("XDG_CACHE_HOME") != env.end() && env.at("XDG_CACHE_HOME") != "") ? env.at("XDG_CACHE_HOME") : toyo::path::posix::join(homedir, ".cache"),
+    name);
+  this->log = toyo::path::posix::join(
+    (env.find("XDG_STATE_HOME") != env.end() && env.at("XDG_STATE_HOME") != "") ? env.at("XDG_STATE_HOME") : toyo::path::posix::join(homedir, ".local/state"),
+    name);
+  this->temp = toyo::path::posix::join(tmpdir, username, name);
+#endif
+}
+
+env_paths env_paths::create(const std::string& name, const env_paths_param& param) {
+  std::string name_ = name;
+  if (param.suffix != "") {
+    name_ += ("-" + param.suffix);
+  }
+  return env_paths(name_);
+}
+
+env_paths env_paths::create(const std::string& name) {
+  env_paths_param param;
+  param.suffix = "";
+  return create(name, param);
+}
+
 } // path
 
 } // toyo

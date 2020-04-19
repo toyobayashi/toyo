@@ -1,5 +1,5 @@
-#ifndef __PATH_HPP__
-#define __PATH_HPP__
+#ifndef __TOYO_PATH_HPP__
+#define __TOYO_PATH_HPP__
 
 #include <string>
 
@@ -151,6 +151,23 @@ std::string __filename();
 std::string __dirname();
 std::string tmpdir();
 std::string homedir();
+
+typedef struct env_paths_param {
+  std::string suffix;
+} env_paths_param;
+
+class env_paths {
+ private:
+  env_paths(const std::string&);
+ public:
+  static env_paths create(const std::string&);
+  static env_paths create(const std::string&, const env_paths_param&);
+  std::string data;
+  std::string config;
+  std::string cache;
+  std::string log;
+  std::string temp;
+};
 
 } // path
 

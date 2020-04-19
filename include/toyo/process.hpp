@@ -1,5 +1,5 @@
-#ifndef __PROCESS_HPP__
-#define __PROCESS_HPP__
+#ifndef __TOYO_PROCESS_HPP__
+#define __TOYO_PROCESS_HPP__
 
 #include <string>
 #include <map>

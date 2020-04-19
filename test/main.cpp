@@ -460,6 +460,14 @@ int main() {
   console::log("%s cwd: %s", charset::a2ocp("当前工作目录").c_str(), toyo::process::cwd().c_str());
   console::log("%s __filename: %s", charset::a2ocp("可执行文件").c_str(), toyo::path::__filename().c_str());
   console::log("%s __dirname: %s", charset::a2ocp("所在目录").c_str(), toyo::path::__dirname().c_str());
+
+  auto env_paths = toyo::path::env_paths::create("toyotest");
+  console::log("%s: %s", charset::a2ocp("envPaths.data").c_str(), charset::a2ocp(env_paths.data).c_str());
+  console::log("%s: %s", charset::a2ocp("envPaths.config").c_str(), charset::a2ocp(env_paths.config).c_str());
+  console::log("%s: %s", charset::a2ocp("envPaths.cache").c_str(), charset::a2ocp(env_paths.cache).c_str());
+  console::log("%s: %s", charset::a2ocp("envPaths.log").c_str(), charset::a2ocp(env_paths.log).c_str());
+  console::log("%s: %s", charset::a2ocp("envPaths.temp").c_str(), charset::a2ocp(env_paths.temp).c_str());
+
   console::log(std::string(""));
   console::log("exit: %d, pid: %d", exit_code, toyo::process::pid());
   console::write("erase");

@@ -1,5 +1,5 @@
-#ifndef __CONSOLE_HPP__
-#define __CONSOLE_HPP__
+#ifndef __TOYO_CONSOLE_HPP__
+#define __TOYO_CONSOLE_HPP__
 
 #ifdef _WIN32
   #ifndef WIN32_LEAN_AND_MEAN

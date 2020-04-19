@@ -1,5 +1,5 @@
-#ifndef __CHARSET_HPP__
-#define __CHARSET_HPP__
+#ifndef __TOYO_CHARSET_HPP__
+#define __TOYO_CHARSET_HPP__
 
 #include <string>
 

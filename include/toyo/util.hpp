@@ -1,9 +1,10 @@
-#ifndef __UTIL_HPP__
-#define __UTIL_HPP__
+#ifndef __TOYO_UTIL_HPP__
+#define __TOYO_UTIL_HPP__
 
 #include <string>
 #include <vector>
 #include "./util/sha256.h"
+#include "./util/md5.h"
 
 namespace toyo {
 
@@ -44,6 +45,38 @@ namespace util {
     static std::string calc_file(const std::string& path);
   private:
     ::sha256_hash* hash_;
+  };
+
+  class md5 {
+   public:
+    ~md5();
+    md5();
+    md5(const md5&);
+    md5(md5&&);
+
+    md5& operator=(md5&&);
+    md5& operator=(const md5&);
+    bool operator==(const md5& other) const;
+    bool operator!=(const md5& other) const;
+    bool operator<(const md5& other) const;
+    bool operator>(const md5& other) const;
+    bool operator<=(const md5& other) const;
+    bool operator>=(const md5& other) const;
+
+    void update(const uint8_t* data, int length);
+    void update(const std::string& data);
+    void update(const std::vector<uint8_t>& data);
+
+    std::string digest();
+
+    void swap(md5& other);
+
+    const ::md5_hash* data() const;
+
+    static std::string calc_str(const std::string& msg);
+    static std::string calc_file(const std::string& path);
+   private:
+    ::md5_hash* hash_;
   };
 
 }

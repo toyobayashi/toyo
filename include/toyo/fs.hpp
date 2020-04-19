@@ -1,5 +1,5 @@
-#ifndef __FS_HPP__
-#define __FS_HPP__
+#ifndef __TOYO_FS_HPP__
+#define __TOYO_FS_HPP__
 
 #include <string>
 #include <vector>
