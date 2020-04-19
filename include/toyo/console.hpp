@@ -15,8 +15,12 @@
 #define COLOR_YELLOW_BRIGHT ("\x1b[33;1m")
 #define COLOR_GREEN_BRIGHT ("\x1b[32;1m")
 #define COLOR_RESET ("\x1b[0m")
+
+#include <termios.h>
+#include <sys/ioctl.h>
 #endif
 
+#include <cstring>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -210,7 +214,7 @@ public:
     fflush(stderr);
 #endif
   }
-
+  static unsigned short get_terminal_width();
   static void clear();
   static void clear_line(short lineNumber = 0);
 }; // class console
@@ -356,6 +360,18 @@ inline void console::clear() {
 #endif
 }
 
+inline unsigned short console::get_terminal_width() {
+#ifdef _WIN32
+  CONSOLE_SCREEN_BUFFER_INFO bInfo;
+  GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &bInfo);
+  return (unsigned short) bInfo.dwSize.X;
+#else
+  struct winsize w;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  return w.ws_col;
+#endif
+}
+
 inline void console::clear_line(short lineNumber) {
 #ifdef _WIN32
   HANDLE _consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -371,10 +387,15 @@ inline void console::clear_line(short lineNumber) {
   if (!FillConsoleOutputAttribute(_consoleHandle, csbi.wAttributes, size, targetFirstCellPosition, &cCharsWritten)) return;
   SetConsoleCursorPosition(_consoleHandle, targetFirstCellPosition);
 #else
+  unsigned short w = get_terminal_width() - 1;
+  char* b = new char[w + 1];
+  memset(b, (int)' ', w);
+  *(b + w) = '\0';
   for (short i = 0; i < lineNumber; i++) {
-    std::cout << "\r\x1b[k\x1b[1A";
+    std::cout << "\r" << b << "\r\x1b[1A";
   }
-  std::cout << "\r\x1b[k";
+  std::cout << "\r" << b << "\r";
+  delete[] b;
   fflush(stdout);
 #endif
 }
