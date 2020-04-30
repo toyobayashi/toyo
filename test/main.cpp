@@ -1,11 +1,13 @@
 #include <iostream>
 #include <cstring>
+#include <string>
 #include "toyo/charset.hpp"
 #include "toyo/process.hpp"
 #include "toyo/path.hpp"
 #include "toyo/fs.hpp"
 #include "toyo/console.hpp"
 #include "oid/oid.hpp"
+#include "toyo/events.hpp"
 
 #include "cmocha/cmocha.h"
 
@@ -416,6 +418,45 @@ void test_console() {
   console::log(std::string(""));
 }
 
+void test_events() {
+  event_emitter ev;
+
+  ev
+    .on<const std::string&, unsigned int>("newListener", [](const std::string& msg, unsigned int id) {
+      console::log("newListener: %s, id: %u", msg.c_str(), id);
+    })
+    .on<const std::string&, int>("message", [](const std::string& msg, int n) {
+      console::log("message: %s, %d", msg.c_str(), n);
+    })
+    .on<const std::exception&>("error", [](const std::exception& err) {
+      console::error(err.what());
+    });
+
+  auto cb = std::function<void(int)>([] (int i) -> void {
+    console::log("remove event: %d", i);
+    throw std::runtime_error("test error");
+  });
+  unsigned int id;
+  ev.add_listener<int>("test", cb, &id);
+  ev.on<int>("test", [=] (int i) -> void {
+    console::log("[=]: %d", i);
+  });
+  ev.once<int>("test", [&] (int i) -> void {
+    console::log("once: %d", i);
+  });
+  ev.prepend_listener<int>("test", [] (int i) -> void {
+    console::log("prepend event: %d", i);
+  });
+  ev.emit<int>("test", 1);
+  ev.off("test", id);
+  ev.emit<int>("test", 1);
+
+  ev.emit("message", std::string("test string"), 233);
+
+  console::log(ev.event_names());
+  console::log(ev.listener_count("test"));
+}
+
 int main() {
   int code = 0;
   int fail = 0;
@@ -452,6 +493,7 @@ int main() {
   int exit_code = fail > 0 ? -1 : 0;
 
   test_console();
+  test_events();
 
   console::log(process::env());
   console::log(std::string("系统临时目录 tmpdir: ") + path::tmpdir());

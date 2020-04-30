@@ -1,7 +1,7 @@
 #ifndef __TOYO_ANY_HPP__
 #define __TOYO_ANY_HPP__
 
-#include <<type_traits>
+#include <type_traits>
 #include <typeinfo>
 
 namespace toyo {
