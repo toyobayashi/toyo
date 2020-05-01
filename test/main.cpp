@@ -431,10 +431,12 @@ void test_events() {
     .on<const std::exception&>("error", [](const std::exception& err) {
       console::error(err.what());
     });
+  
+  ev.emit<const std::exception&>("error", std::runtime_error("test error1"));
 
   auto cb = std::function<void(int)>([] (int i) -> void {
     console::log("remove event: %d", i);
-    throw std::runtime_error("test error");
+    throw std::runtime_error("test error2");
   });
   unsigned int id;
   ev.add_listener<int>("test", cb, &id);

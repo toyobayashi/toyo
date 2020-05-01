@@ -46,7 +46,7 @@ class event_emitter {
   unsigned int id_;
   std::map<std::string, std::vector<listener_base*>> events_;
 
-  template <typename Callable, typename... ArgTypes>
+  template <typename... ArgTypes, typename Callable>
   event_emitter& _add_listener(
     const std::string& event_name,
     const Callable& l,
@@ -112,27 +112,74 @@ class event_emitter {
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& add_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<Callable, ArgTypes...>(event_name, l, id, false);
+    return this->_add_listener<ArgTypes...>(event_name, l, id, false);
   }
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& on(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<Callable, ArgTypes...>(event_name, l, id, false);
+    return this->_add_listener<ArgTypes...>(event_name, l, id, false);
   }
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& once(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<Callable, ArgTypes...>(event_name, l, id, false, true);
+    return this->_add_listener<ArgTypes...>(event_name, l, id, false, true);
   }
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& prepend_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<Callable, ArgTypes...>(event_name, l, id, true);
+    return this->_add_listener<ArgTypes...>(event_name, l, id, true);
   }
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& prepend_once_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<Callable, ArgTypes...>(event_name, l, id, true, true);
+    return this->_add_listener<ArgTypes...>(event_name, l, id, true, true);
+  }
+
+  bool emit(const std::string& event_name) {
+    if (this->events_.find(event_name) != this->events_.end()) {
+      std::vector<listener_base*>& listeners = this->events_.at(event_name);
+      for (size_t i = 0; i < listeners.size(); i++) {
+        const auto& l = listeners[i];
+        try {
+          listener<>* lp = static_cast<listener<>*>(l);
+          lp->invoke();
+          if (lp->is_once()) {
+            listeners.erase(listeners.begin() + i);
+            i--;
+          }
+        } catch (const std::exception& err) {
+          this->emit<const std::exception&>("error", err);
+        }
+      }
+      return true;
+    } else if (event_name == "error") {
+      throw std::runtime_error("Unhandled error.");
+    }
+    return false;
+  }
+
+  template <typename DataType>
+  bool emit(const std::string& event_name, DataType data) {
+    if (this->events_.find(event_name) != this->events_.end()) {
+      std::vector<listener_base*>& listeners = this->events_.at(event_name);
+      for (size_t i = 0; i < listeners.size(); i++) {
+        const auto& l = listeners[i];
+        try {
+          listener<DataType>* lp = static_cast<listener<DataType>*>(l);
+          lp->invoke(data);
+          if (lp->is_once()) {
+            listeners.erase(listeners.begin() + i);
+            i--;
+          }
+        } catch (const std::exception& err) {
+          this->emit<const std::exception&>("error", err);
+        }
+      }
+      return true;
+    } else if (event_name == "error") {
+      throw data;
+    }
+    return false;
   }
 
   template <typename... ArgTypes>
@@ -149,14 +196,12 @@ class event_emitter {
             i--;
           }
         } catch (const std::exception& err) {
-          if (this->events_.find("error") != this->events_.end()) {
-            this->emit<const std::exception&>("error", err);
-          } else {
-            throw err;
-          }
+          this->emit<const std::exception&>("error", err);
         }
       }
       return true;
+    } else if (event_name == "error") {
+      throw std::runtime_error("Unhandled error.");
     }
     return false;
   }
