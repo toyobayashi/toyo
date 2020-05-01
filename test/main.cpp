@@ -432,7 +432,7 @@ void test_events() {
       console::error(err.what());
     });
   
-  ev.emit<const std::exception&>("error", std::runtime_error("test error1"));
+  ev.emit("error", std::runtime_error("test error1"));
 
   auto cb = std::function<void(int)>([] (int i) -> void {
     console::log("remove event: %d", i);

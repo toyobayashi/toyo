@@ -158,15 +158,15 @@ class event_emitter {
     return false;
   }
 
-  template <typename DataType>
-  bool emit(const std::string& event_name, DataType data) {
+  template <typename FirstType, typename... ArgTypes>
+  bool emit(const std::string& event_name, FirstType first, ArgTypes... data) {
     if (this->events_.find(event_name) != this->events_.end()) {
       std::vector<listener_base*>& listeners = this->events_.at(event_name);
       for (size_t i = 0; i < listeners.size(); i++) {
         const auto& l = listeners[i];
         try {
-          listener<DataType>* lp = static_cast<listener<DataType>*>(l);
-          lp->invoke(data);
+          listener<FirstType, ArgTypes...>* lp = static_cast<listener<FirstType, ArgTypes...>*>(l);
+          lp->invoke(first, data...);
           if (lp->is_once()) {
             listeners.erase(listeners.begin() + i);
             i--;
@@ -177,31 +177,7 @@ class event_emitter {
       }
       return true;
     } else if (event_name == "error") {
-      throw data;
-    }
-    return false;
-  }
-
-  template <typename... ArgTypes>
-  bool emit(const std::string& event_name, ArgTypes... data) {
-    if (this->events_.find(event_name) != this->events_.end()) {
-      std::vector<listener_base*>& listeners = this->events_.at(event_name);
-      for (size_t i = 0; i < listeners.size(); i++) {
-        const auto& l = listeners[i];
-        try {
-          listener<ArgTypes...>* lp = static_cast<listener<ArgTypes...>*>(l);
-          lp->invoke(data...);
-          if (lp->is_once()) {
-            listeners.erase(listeners.begin() + i);
-            i--;
-          }
-        } catch (const std::exception& err) {
-          this->emit<const std::exception&>("error", err);
-        }
-      }
-      return true;
-    } else if (event_name == "error") {
-      throw std::runtime_error("Unhandled error.");
+      throw first;
     }
     return false;
   }
