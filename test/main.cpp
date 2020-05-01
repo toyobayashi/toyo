@@ -419,7 +419,7 @@ void test_console() {
 }
 
 void test_events() {
-  event_emitter ev;
+  events::event_emitter ev;
 
   ev
     .on<const std::string&, unsigned int>("newListener", [](const std::string& msg, unsigned int id) {

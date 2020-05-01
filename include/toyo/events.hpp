@@ -11,6 +11,8 @@
 
 namespace toyo {
 
+namespace events {
+
 class event_emitter {
  private:
   class listener_base {
@@ -103,8 +105,8 @@ class event_emitter {
     id_ = other.id_;
     other.id_ = 0;
 
-    events_ = other.events_;
-    other.events_.clear();
+    this->remove_all_listeners();
+    events_ = std::move(other.events_);
     return *this;
   }
 
@@ -221,6 +223,8 @@ class event_emitter {
   }
 };
 
-}
+} // events
+
+} // toyo
 
 #endif
