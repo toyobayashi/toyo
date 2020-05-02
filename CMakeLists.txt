@@ -11,13 +11,13 @@ set(TEST_EXE_NAME toyotest)
 
 include(cmake/lib.cmake)
 
-if(CCPM_BUILD_TEST)
-  include(cmake/test.cmake)
-endif()
-
 include(cmake/npm.cmake)
 
 if(CCPM_BUILD_TEST)
+  include(cmake/test.cmake)
   dp_require("@ccpm/cmocha" "@ccpm/oid")
   target_link_libraries(${TEST_EXE_NAME} cmocha oid)
+  # if(WIN32 AND MSVC)
+  #   target_link_libraries(addon cmocha oid)
+  # endif()
 endif()
