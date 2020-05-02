@@ -438,7 +438,7 @@ void test_events() {
     console::log("remove event: %d", i);
     throw std::runtime_error("test error2");
   });
-  unsigned int id;
+  events::event_id id;
   ev.add_listener<int>("test", cb, &id);
   ev.on<int>("test", [=] (int i) -> void {
     console::log("[=]: %d", i);

@@ -7,21 +7,22 @@
 #include <vector>
 #include <functional>
 #include <iostream>
-#include <utility>
 
 namespace toyo {
 
 namespace events {
 
+typedef int event_id;
+
 class event_emitter {
  private:
   class listener_base {
    private:
-    unsigned int id_;
+    event_id id_;
    public:
     virtual ~listener_base() {}
-    listener_base(unsigned int id): id_(id) {}
-    unsigned int get_id() const {
+    listener_base(event_id id): id_(id) {}
+    event_id get_id() const {
       return this->id_;
     }
   };
@@ -33,7 +34,7 @@ class event_emitter {
 
     std::function<void (ArgTypes...)> fn_;
    public:
-    listener(const std::function<void (ArgTypes...)>& fn, unsigned int id, bool once = false): listener_base(id), once_(once), fn_(fn) {}
+    listener(const std::function<void (ArgTypes...)>& fn, event_id id, bool once = false): listener_base(id), once_(once), fn_(fn) {}
     void invoke(ArgTypes... args) const {
       fn_(args...);
     }
@@ -43,14 +44,14 @@ class event_emitter {
   };
 
   size_t max_listeners_;
-  unsigned int id_;
+  event_id id_;
   std::map<std::string, std::vector<listener_base*>> events_;
 
   template <typename... ArgTypes, typename Callable>
   event_emitter& _add_listener(
     const std::string& event_name,
     const Callable& l,
-    unsigned int* id = nullptr,
+    event_id* id = nullptr,
     bool prepend = false,
     bool once = false
   ) {
@@ -111,27 +112,27 @@ class event_emitter {
   }
 
   template <typename... ArgTypes, typename Callable>
-  event_emitter& add_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
+  event_emitter& add_listener(const std::string& event_name, const Callable& l, event_id* id = nullptr) {
     return this->_add_listener<ArgTypes...>(event_name, l, id, false);
   }
 
   template <typename... ArgTypes, typename Callable>
-  event_emitter& on(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
-    return this->_add_listener<ArgTypes...>(event_name, l, id, false);
+  event_emitter& on(const std::string& event_name, const Callable& l, event_id* id = nullptr) {
+    return this->add_listener<ArgTypes...>(event_name, l, id);
   }
 
   template <typename... ArgTypes, typename Callable>
-  event_emitter& once(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
+  event_emitter& once(const std::string& event_name, const Callable& l, event_id* id = nullptr) {
     return this->_add_listener<ArgTypes...>(event_name, l, id, false, true);
   }
 
   template <typename... ArgTypes, typename Callable>
-  event_emitter& prepend_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
+  event_emitter& prepend_listener(const std::string& event_name, const Callable& l, event_id* id = nullptr) {
     return this->_add_listener<ArgTypes...>(event_name, l, id, true);
   }
 
   template <typename... ArgTypes, typename Callable>
-  event_emitter& prepend_once_listener(const std::string& event_name, const Callable& l, unsigned int* id = nullptr) {
+  event_emitter& prepend_once_listener(const std::string& event_name, const Callable& l, event_id* id = nullptr) {
     return this->_add_listener<ArgTypes...>(event_name, l, id, true, true);
   }
 
@@ -225,7 +226,7 @@ class event_emitter {
     return *this;
   }
 
-  event_emitter& remove_listener(const std::string& event_name, unsigned int id) {
+  event_emitter& remove_listener(const std::string& event_name, event_id id) {
     if (this->events_.find(event_name) != this->events_.end()) {
       auto& listeners = this->events_.at(event_name);
       for (size_t i = 0; i < listeners.size(); i++) {
@@ -239,7 +240,7 @@ class event_emitter {
     return *this;
   }
 
-  event_emitter& off(const std::string& event_name, unsigned int id) {
+  event_emitter& off(const std::string& event_name, event_id id) {
     return this->remove_listener(event_name, id);
   }
 };
