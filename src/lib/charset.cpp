@@ -85,7 +85,7 @@ std::string w2a(const std::wstring& wstr) {
 static std::string _w2a(const std::wstring& wstr, int code_page) {
 #ifdef _WIN32
   int len = WideCharToMultiByte(code_page, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-  if (len == -1) {
+  if (len == 0) {
     throw std::runtime_error(get_win32_last_error_message().c_str());
   }
   char* buf = new char[len];
