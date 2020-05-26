@@ -13,16 +13,18 @@ namespace toyo {
 namespace charset {
 
 std::wstring a2w(const std::string& str) {
-  /*int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
-  if (len == -1) {
-    throw std::runtime_error("Convert failed.");
+#ifdef _WIN32
+  int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+  if (len == 0) {
+    throw std::runtime_error(get_win32_last_error_message());
   }
   wchar_t* buf = new wchar_t[len];
+  memset(buf, 0, len * sizeof(wchar_t));
   MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buf, len);
   std::wstring res(buf);
   delete[] buf;
-  return res;*/
-
+  return res;
+#else
   std::string target_locale = "en_US.utf8";
   const char* c_locale = std::setlocale(LC_CTYPE, nullptr);
   std::string locale(c_locale ? c_locale : "");
@@ -42,18 +44,22 @@ std::wstring a2w(const std::string& str) {
     std::setlocale(LC_CTYPE, locale.c_str());
   }
   return res;
+#endif
 }
 
 std::string w2a(const std::wstring& wstr) {
-  /*int len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
-  if (len == -1) {
-    throw std::runtime_error("Convert failed.");
+#ifdef _WIN32
+  int len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, NULL, NULL);
+  if (len == 0) {
+    throw std::runtime_error(get_win32_last_error_message());
   }
   char* buf = new char[len];
+  memset(buf, 0, len * sizeof(char));
   WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, buf, len, NULL, NULL);
   std::string res(buf);
   delete[] buf;
-  return res;*/
+  return res;
+#else
   std::string target_locale = "en_US.utf8";
   const char* c_locale = std::setlocale(LC_CTYPE, nullptr);
   std::string locale(c_locale ? c_locale : "");
@@ -73,6 +79,7 @@ std::string w2a(const std::wstring& wstr) {
     std::setlocale(LC_CTYPE, locale.c_str());
   }
   return res;
+#endif
 }
 
 static std::string _w2a(const std::wstring& wstr, int code_page) {
