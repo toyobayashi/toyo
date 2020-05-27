@@ -1,4 +1,4 @@
-file(GLOB_RECURSE TEST_SOURCE_FILES "test/test.cpp" "test/main.cpp")
+file(GLOB_RECURSE TEST_SOURCE_FILES "test/test.cpp" "test/regex.cpp" "test/main.cpp")
 
 add_executable(${TEST_EXE_NAME}
   ${TEST_SOURCE_FILES}

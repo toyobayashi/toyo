@@ -11,6 +11,8 @@
 
 #include "cmocha/cmocha.h"
 
+#include "regex.hpp"
+
 using namespace toyo;
 
 static int test_join() {
@@ -472,7 +474,8 @@ int test() {
     test_resolve,
     test_relative,
     test_delimiter_and_sep,
-    test_class);
+    test_class,
+    test_globrex);
   
   if (code != 0) {
     fail++;

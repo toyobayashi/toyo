@@ -2,6 +2,8 @@
 #define __TOYO_PATH_HPP__
 
 #include <string>
+#include <regex>
+#include <vector>
 
 namespace toyo {
 
@@ -167,6 +169,39 @@ class env_paths {
   std::string cache;
   std::string log;
   std::string temp;
+};
+
+class globrex {
+ public:
+  struct globrex_options {
+    bool extended;
+    bool globstar;
+    bool strict;
+    bool filepath;
+    globrex_options();
+  };
+  std::regex regex;
+  std::string regex_str;
+  std::regex path_regex;
+  std::string path_regex_str;
+  std::vector<std::regex> path_segments;
+  std::vector<std::string> path_segments_str;
+  std::regex path_globstar;
+  std::string path_globstar_str;
+  globrex(const std::string&);
+  globrex(const std::string&, const globrex_options&);
+
+  bool filepath() const;
+
+  static std::regex glob_to_regex(const std::string&);
+ private:
+  bool _filepath;
+  void _init(const std::string&, const globrex_options&);
+  struct add_options {
+    bool split;
+    bool last;
+    std::string only;
+  };
 };
 
 } // path

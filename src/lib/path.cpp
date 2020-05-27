@@ -1694,6 +1694,350 @@ env_paths env_paths::create(const std::string& name) {
   return create(name, param);
 }
 
+globrex::globrex_options::globrex_options():
+  extended(false),
+  globstar(false),
+  strict(true),
+  filepath(false) {}
+
+globrex::globrex(const std::string& glob) {
+  globrex_options options;
+  this->_init(glob, options);
+}
+
+globrex::globrex(const std::string& glob, const globrex_options& options) {
+  this->_init(glob, options);
+}
+
+bool globrex::filepath() const {
+  return this->_filepath;
+}
+
+void globrex::_init(const std::string& glob, const globrex_options& options) {
+#ifdef _WIN32
+  const bool isWin = true;
+  const std::string SEP = "(?:\\\\|\\/)";
+  const std::string SEP_ESC = "\\\\";
+  const std::string SEP_RAW = "\\";
+#else
+  const bool isWin = false;
+  const std::string SEP = "\\/";
+  const std::string SEP_ESC = "/";
+  const std::string SEP_RAW = "/";
+#endif
+
+  const std::string GLOBSTAR = "(?:(?:[^" + SEP_ESC + "/]*(?:" + SEP_ESC + "|/|$))*)";
+  const std::string WILDCARD = "(?:[^" + SEP_ESC + "/]*)";
+  const std::string GLOBSTAR_SEGMENT = "((?:[^" + SEP_ESC + "/]*(?:" + SEP_ESC + "|/|$))*)";
+  const std::string WILDCARD_SEGMENT = "(?:[^" + SEP_ESC + "/]*)";
+
+  bool extended = options.extended;
+  bool globstar = options.globstar;
+  bool strict = options.strict;
+  bool filepath = options.filepath;
+  this->_filepath = filepath;
+
+  auto sepPattern = std::regex("^" + SEP + (strict ? "" : "+") + "$");
+  std::string regex = "";
+  std::string segment = "";
+  std::string pathRegexStr = "";
+  std::vector<std::regex> pathSegments = {};
+  std::vector<std::string> pathSegmentsStr = {};
+
+  auto inGroup = false;
+  auto inRange = false;
+
+  std::vector<std::string> ext = {};
+
+  auto add = [&](const std::string& str, const add_options& options) {
+    auto split = options.split;
+    auto last = options.last;
+    auto only = options.only;
+    if (only != "path") regex += str;
+    if (filepath && only != "regex") {
+      pathRegexStr += std::regex_search(str, sepPattern) ? SEP : str;
+      if (split) {
+        if (last) segment += str;
+        if (segment != "") {
+          // change it 'includes'
+          segment = "$" + segment + "$";
+          pathSegments.push_back(std::regex(segment));
+          pathSegmentsStr.push_back(segment);
+        }
+        segment = "";
+      } else {
+        segment += str;
+      }
+    }
+  };
+
+  std::wstring wglob = toyo::charset::a2w(glob);
+  std::wstring c, n;
+  for (size_t i = 0; i < wglob.size(); i++) {
+    c = wglob[i];
+    n = ((i + 1) == wglob.size()) ? std::wstring(L"") : std::wstring({ wglob[i + 1], L'\0' });
+
+    add_options opts;
+    opts.split = false;
+    opts.last = false;
+    opts.only = "";
+
+    if (c == L"\\" || c == L"$" || c == L"^" || c == L"." || c == L"=") {
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (std::regex_search(toyo::charset::w2a(c), sepPattern)) {
+      opts.split = true;
+      add(SEP, opts);
+      if (n != L"" && std::regex_search(toyo::charset::w2a(n), sepPattern) && !strict) regex += "?";
+      continue;
+    }
+
+    if (c == L"(") {
+      if (ext.size() > 0) {
+        add(toyo::charset::w2a(c) + "?:", opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L")") {
+      if (ext.size() > 0) {
+        add(toyo::charset::w2a(c), opts);
+        std::string type = ext.back();
+        ext.pop_back();
+        if (type == "@") {
+          add("{1}", opts);
+        } else if (type == "!") {
+          add(WILDCARD, opts);
+        } else {
+          add(type, opts);
+        }
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"|") {
+      if (ext.size() > 0) {
+        add(toyo::charset::w2a(c), opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"+") {
+      if (n == L"(" && extended) {
+        ext.push_back(toyo::charset::w2a(c));
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"@" && extended) {
+      if (n == L"(") {
+        ext.push_back(toyo::charset::w2a(c));
+        continue;
+      }
+    }
+
+    if (c == L"!") {
+      if (extended) {
+        if (inRange) {
+          add("^", opts);
+          continue;
+        }
+        if (n == L"(") {
+          ext.push_back(toyo::charset::w2a(c));
+          add("(?!", opts);
+          i++;
+          continue;
+        }
+        add("\\" + toyo::charset::w2a(c), opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"?") {
+      if (extended) {
+        if (n == L"(") {
+          ext.push_back(toyo::charset::w2a(c));
+        } else {
+          add(".", opts);
+        }
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"[") {
+      if (inRange && n == L":") {
+        i++; // skip [
+        std::wstring value = L"";
+        i++;
+        while (wglob[i] != L':') {
+          value += wglob[i];
+          i++;
+        }
+        if (value == L"alnum") add("(?:\\w|\\d)", opts);
+        else if (value == L"space") add("\\s", opts);
+        else if (value == L"digit") add("\\d", opts);
+        i++; // skip last ]
+        continue;
+      }
+      if (extended) {
+        inRange = true;
+        add(toyo::charset::w2a(c), opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"]") {
+      if (extended) {
+        inRange = false;
+        add(toyo::charset::w2a(c), opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"{") {
+      if (extended) {
+        inGroup = true;
+        add("(?:", opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"}") {
+      if (extended) {
+        inGroup = false;
+        add(")", opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L",") {
+      if (inGroup) {
+        add("|", opts);
+        continue;
+      }
+      add("\\" + toyo::charset::w2a(c), opts);
+      continue;
+    }
+
+    if (c == L"*") {
+      if (n == L"(" && extended) {
+        ext.push_back(toyo::charset::w2a(c));
+        continue;
+      }
+      // Move over all consecutive "*"'s.
+      // Also store the previous and next characters
+      std::string prevChar;
+      if (i == 0) {
+        prevChar = "";
+      } else {
+        prevChar = toyo::charset::w2a(std::wstring({ wglob[i - 1], L'\0' }));
+      }
+      size_t starCount = 1;
+      while (wglob[i + 1] == L'*') {
+        starCount++;
+        i++;
+      }
+      std::string nextChar;
+      if (i + 1 == wglob.size()) {
+        nextChar = "";
+      } else {
+        nextChar = toyo::charset::w2a(std::wstring({ wglob[i + 1], L'\0' }));
+      }
+      if (!globstar) {
+        // globstar is disabled, so treat any number of "*" as one
+        add(".*", opts);
+      } else {
+        // globstar is enabled, so determine if this is a globstar segment
+        bool isGlobstar =
+          starCount > 1 && // multiple "*"'s
+          // from the start of the segment
+          (prevChar == SEP_RAW || prevChar == "/" || prevChar == "") &&
+          (nextChar == SEP_RAW || nextChar == "/" || nextChar == "");
+        if (isGlobstar) {
+          // it's a globstar, so match zero or more path segments
+          add_options opt1;
+          opt1.last = false;
+          opt1.split = false;
+          opt1.only = "regex";
+          add(GLOBSTAR, opt1);
+          add_options opt2;
+          opt2.last = true;
+          opt2.split = true;
+          opt2.only = "path";
+          add(GLOBSTAR_SEGMENT, opt2);
+          i++; // move over the "/"
+        } else {
+          // it's not a globstar, so only match one path segment
+          add_options opt1;
+          opt1.last = false;
+          opt1.split = false;
+          opt1.only = "regex";
+          add(WILDCARD, opt1);
+          add_options opt2;
+          opt2.last = false;
+          opt2.split = false;
+          opt2.only = "path";
+          add(WILDCARD_SEGMENT, opt2);
+        }
+      }
+      continue;
+    }
+
+    add(toyo::charset::w2a(c), opts);
+  }
+
+  regex = "^" + regex + "$";
+  segment = "^" + segment + "$";
+  if (filepath) {
+    pathRegexStr = "^" + pathRegexStr + "$";
+  }
+
+  this->regex = std::regex(regex);
+  this->regex_str = regex;
+
+  if (filepath) {
+    pathSegments.push_back(std::regex(segment));
+    pathSegmentsStr.push_back(segment);
+    this->path_regex = std::regex(pathRegexStr);
+    this->path_regex_str = pathRegexStr;
+    this->path_segments = pathSegments;
+    this->path_segments_str = pathSegmentsStr;
+    this->path_globstar_str = "^" + GLOBSTAR_SEGMENT + "$";
+    this->path_globstar = std::regex(this->path_globstar_str);
+  }
+}
+
+std::regex globrex::glob_to_regex(const std::string& glob) {
+  globrex_options options;
+  options.extended = true;
+  options.filepath = true;
+  options.strict = false;
+  options.globstar = true;
+  return globrex(glob, options).path_regex;
+}
+
 } // path
 
 } // toyo
