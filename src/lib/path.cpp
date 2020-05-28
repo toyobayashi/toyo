@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <stdexcept>
 
 #ifndef _WIN32
@@ -1697,7 +1698,7 @@ env_paths env_paths::create(const std::string& name) {
 globrex::globrex_options::globrex_options():
   extended(false),
   globstar(false),
-  strict(true),
+  strict(false),
   filepath(false) {}
 
 globrex::globrex(const std::string& glob) {
@@ -1760,7 +1761,7 @@ void globrex::_init(const std::string& glob, const globrex_options& options) {
         if (last) segment += str;
         if (segment != "") {
           // change it 'includes'
-          segment = "$" + segment + "$";
+          segment = "^" + segment + "$";
           pathSegments.push_back(std::regex(segment));
           pathSegmentsStr.push_back(segment);
         }
@@ -1775,7 +1776,7 @@ void globrex::_init(const std::string& glob, const globrex_options& options) {
   std::wstring c, n;
   for (size_t i = 0; i < wglob.size(); i++) {
     c = wglob[i];
-    n = ((i + 1) == wglob.size()) ? std::wstring(L"") : std::wstring({ wglob[i + 1], L'\0' });
+    n = ((i + 1) == wglob.size()) ? std::wstring(L"") : std::wstring({ wglob[i + 1] });
 
     add_options opts;
     opts.split = false;
@@ -1952,7 +1953,7 @@ void globrex::_init(const std::string& glob, const globrex_options& options) {
       if (i == 0) {
         prevChar = "";
       } else {
-        prevChar = toyo::charset::w2a(std::wstring({ wglob[i - 1], L'\0' }));
+        prevChar = toyo::charset::w2a(std::wstring({ wglob[i - 1] }));
       }
       size_t starCount = 1;
       while (wglob[i + 1] == L'*') {
@@ -1963,7 +1964,7 @@ void globrex::_init(const std::string& glob, const globrex_options& options) {
       if (i + 1 == wglob.size()) {
         nextChar = "";
       } else {
-        nextChar = toyo::charset::w2a(std::wstring({ wglob[i + 1], L'\0' }));
+        nextChar = toyo::charset::w2a(std::wstring({ wglob[i + 1] }));
       }
       if (!globstar) {
         // globstar is disabled, so treat any number of "*" as one
@@ -2036,6 +2037,29 @@ std::regex globrex::glob_to_regex(const std::string& glob) {
   options.strict = false;
   options.globstar = true;
   return globrex(glob, options).path_regex;
+}
+
+bool globrex::match(const std::string& str, const std::string& glob, const globrex_options* opts) {
+  std::regex re;
+  try {
+    if (opts == nullptr) {
+      re = glob_to_regex(glob);
+    } else {
+      re = globrex(glob, *opts).path_regex;
+    }
+  } catch (const std::exception&) {
+    return false;
+  }
+  // std::vector<std::smatch> match;
+  size_t matches = 0;
+  std::smatch sm;
+  std::string tmpstr = str;
+  while(tmpstr != "" && std::regex_search(tmpstr, sm, re)) {
+    matches++;
+    tmpstr = sm.suffix();
+  }
+
+  return matches == 1;
 }
 
 } // path

@@ -194,6 +194,7 @@ class globrex {
   bool filepath() const;
 
   static std::regex glob_to_regex(const std::string&);
+  static bool match(const std::string& str, const std::string& glob, const globrex_options* opts = nullptr);
  private:
   bool _filepath;
   void _init(const std::string&, const globrex_options&);
